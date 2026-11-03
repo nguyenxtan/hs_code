@@ -11,7 +11,7 @@ Plan: docs/superpowers/plans/2026-11-03-hs-code-mvp.md
 - Task 1: complete. Python tests 4/4; JSON/CSV/XLSX reconcile; 11,871 accepted, 0 quarantine; 531 derived description changes; repeated runs byte-identical; original main rows preserved. See docs/data-audit.md.
 - Task 2: complete. PostgreSQL import idempotent with 11,871 active records; 11,871 local multilingual-e5-small vectors (384 dimensions), matching snapshot, no API calls; lexical and hybrid sample checks passed. Backup restored into a separate database and active count matched.
 - Task 3: complete. Search-first UI; filters/help hidden until requested; mobile checked; profile corrections, undo, supplementary facts, persistence, comparison/sharing and API input checks covered by 4 browser tests.
-- Task 4: implementation and independent review complete. Claude reviewed commit `197628e`; coordinator fixed all critical/important findings and high-impact minor findings. Latest Python 6/6, TypeScript unit 29/29, browser 10/10, typecheck and production build passed. Review response records the fixes and remaining source-curation/public-production limits. Integration into main follows the checked release commit.
+- Task 4: implementation and independent review complete. Claude reviewed commit `197628e`; coordinator fixed all critical/important findings and high-impact minor findings. Latest Python 6/6, TypeScript unit 29/29, browser 10/10, typecheck and production build passed. Review response records the fixes and remaining source-curation/public-production limits. Integrated into main by fast-forward from the verified feature branch; coordinator reran unit/data tests on main.
 
 ## Additional rulings
 
@@ -34,3 +34,11 @@ Plan: docs/superpowers/plans/2026-11-03-hs-code-mvp.md
 - Snapshot identity includes derived content and only pinned source files; conflicting same-version imports are rejected before active data changes.
 - Full release verification: 29 TypeScript tests, 6 Python tests, 10 browser tests; type generation/typecheck and production build passed. Desktop/mobile screenshots inspected.
 - Local runtime artifacts remain ignored: 4 raw source files, prepared snapshot, 11,871 complete local 384-dimensional vectors, model cache, credentials and database backups.
+
+## Local release
+
+- Implementation and review fixes integrated into `main`; code commit `cfeb18e`. Dedicated checkout preserved at `/Users/tannx/Documents/code/hs_code`.
+- Production server runs at `http://127.0.0.1:3100`, database in local Docker. Status confirms 11,871 active records and extractive chat mode.
+- Re-preparation byte comparison passed; all four pinned raw checksums matched; index has 11,871 unique codes with 384-d vectors matching snapshot `vn-hs2022-89808434c391-technical-v1`. Reimport returned 11,871 without altering snapshot data.
+- Fresh release backup restored to a separate temporary database: active version and 11,871 records matched; temporary database removed after verification. Backup remains ignored at `backups/hs_code-release.dump`.
+- Live production smoke: `con dau` and `con dấu bằng tay` return 96110000 first; random `xqzvw` returns no candidates.

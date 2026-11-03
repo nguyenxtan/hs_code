@@ -71,7 +71,7 @@ Files: README, .env.example, CONTRIBUTING, docs/runbook.md, .github/workflows/ci
 - [x] Document exact local setup, dataset licensing, source import, modes, backup/restore and limitations.
 - [x] Run full test suite, real-data audit, build and end-to-end tests.
 - [x] Ask Claude to review code/architecture only; coordinator fixes significant findings with regression tests.
-- [ ] Commit and push implementation, integrate locally without losing review docs, leave local app accessible and provide concrete results with limitations.
+- [x] Commit and push implementation, integrate locally without losing review docs, leave local app accessible and provide concrete results with limitations.
 
 ## Decisions for this implementation
 
