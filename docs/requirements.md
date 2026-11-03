@@ -22,6 +22,10 @@ Người dùng chính chưa được xác nhận: cần thử với cả ngườ
 | OPS-01 | Tự triển khai | Có hướng dẫn, cấu hình mẫu không có secret, backup và khôi phục được thử |
 | PRIV-01 | Phân quyền phiên | Người dùng không đọc/sửa được phiên của người khác; có chính sách lưu và xóa dữ liệu |
 
+## Thiết kế mở rộng VAT, chưa thuộc tính năng áp dụng của MVP
+
+Theo [đặc tả VAT](vat-design.md), giữ raw ngay từ bước nền dữ liệu; chức năng xác định VAT chỉ bật khi có quy tắc và nguồn đã duyệt. Kết quả phụ thuộc khâu, hàng thực tế, ngày và điều kiện; không gắn rate cuối cùng cố định vào mã HS. Thiếu điều kiện trả “cần bổ sung thông tin”, không tự trả 10%. Không chịu thuế, chịu 0% và không phải kê khai/tính nộp được lưu riêng. Khấu trừ/hoàn thuế và tính tiền là phạm vi khác.
+
 ## Ngoài MVP
 
 - Tự động chốt mã khai báo hoặc bảo đảm kết quả được cơ quan có thẩm quyền chấp nhận.

@@ -36,6 +36,8 @@ Lỗi khóa/phiên bản/mã sai bị quarantine. Không tự bỏ dòng rồi b
 
 Không gộp mã chỉ vì cùng mô tả “Loại khác”. Không tự sửa nội dung pháp lý bằng mô hình. Thay đổi quy tắc cần diff, kiểm tra hồi quy và ghi phiên bản.
 
+VAT được chuẩn hóa thành quan sát nguồn và bộ quy tắc có phạm vi/hiệu lực, không thành một phần trăm cố định của mã HS. Giữ riêng không chịu thuế, chịu 0% và không phải kê khai/tính nộp; phân biệt mức cơ bản, mức sau giảm, kết quả áp dụng và tình trạng chưa đủ dữ kiện. Xem [thiết kế VAT](vat-design.md) để biên soạn dữ liệu và kiểm tra.
+
 ## Phân nhóm ba lớp
 
 - Cây HS chính thức: phần/chương/nhóm/phân nhóm và các cấp chi tiết của đúng danh mục.

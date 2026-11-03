@@ -36,6 +36,7 @@
 
 - `dataset_versions`, `hs_nodes`, `hs_codes`: mã là text; khóa duy nhất theo dataset/version/code, không chỉ code.
 - `tax_records`: raw + bản chuẩn hóa + điều kiện, thời gian, căn cứ, trạng thái xác minh.
+- VAT tách `vat_observations`, `vat_rules`, `vat_rule_versions`, `vat_evaluations` và trace: mã HS chỉ hỗ trợ xác định phạm vi; kết quả phụ thuộc lời khai, khâu, ngày và quy tắc đã duyệt. Trạng thái thuế khác trạng thái đánh giá; điều kiện chưa biết không mặc định thành false hoặc rate 10. Xem [thiết kế VAT](vat-design.md).
 - `categories`, `code_categories`, `attributes`, `code_attributes`, `aliases`: quan hệ nhiều-nhiều, nguồn và trạng thái duyệt.
 - `documents`, `document_versions`, `chunks`, `embeddings`: URI, hash, vị trí đoạn, license, model/version/dimensions.
 - `conversations`, `messages`, `products`, `product_facts`, `fact_events`, `summaries`: owner, revision, nguồn message, trạng thái xác nhận/suy đoán và lịch sử thay đổi. Biến thể liên kết hồ sơ gốc; bộ hàng có cấu trúc thành phần, không tự chia thành các quyết định mã độc lập.

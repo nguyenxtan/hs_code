@@ -24,6 +24,7 @@ Dự án mã nguồn mở hỗ trợ tra cứu HS, lọc hàng hóa và hội th
 7. [Đề bài tham vấn Claude Code](docs/consultations/claude-brief.md)
 8. [Báo cáo độc lập của Claude Code](docs/consultations/claude-review.md)
 9. [Tổng hợp, điều chỉnh và đề xuất sau tham vấn](docs/consultations/synthesis.md)
+10. [Thiết kế VAT theo điều kiện và thời điểm](docs/vat-design.md)
 
 ## Hướng triển khai ban đầu
 

@@ -1,5 +1,7 @@
 # Nguồn và giấy phép dữ liệu
 
+Nguồn VAT do chủ dự án bổ sung và mức kiểm chứng từng nguồn được lưu tại [thiết kế VAT](vat-design.md#danh-mục-nguồn-và-mức-kiểm-chứng). Đây là đầu mối xây bộ quy tắc, không phải tuyên bố đã audit toàn bộ chính sách.
+
 ## Nguồn được người dùng cung cấp
 
 [Thư mục Drive](https://drive.google.com/drive/folders/1jEN1kzB0qVbjA7UH7Zm49WAZ5XdHR1A7), kiểm tra ngày 2026-11-03:
