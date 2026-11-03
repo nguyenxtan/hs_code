@@ -52,7 +52,12 @@ export type Message = {
   mode?: string;
 };
 export type CodeReference = { code: string; version: string };
-export type ProductRevision = { name: string; facts: Record<string, string>; query: string };
+export type ProductRevision = {
+  name: string;
+  facts: Record<string, string>;
+  query: string;
+  focus_code?: string;
+};
 export type Product = ProductRevision & {
   id: string;
   messages: Message[];

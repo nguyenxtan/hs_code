@@ -62,3 +62,17 @@ it('handles negation across ordinary descriptive words and a Vietnamese contrast
   expect(extractFacts('Không phải bằng tay mà gắn máy')).toEqual({ operation: 'gắn máy' });
   expect(extractFacts('Không biết có phải bằng tay không')).toEqual({});
 });
+it('persists a code discussion, clears its focus on query edit and restores it on undo', async () => {
+  const { restoreWorkspace, serializeWorkspace } = await import('../src/lib/session');
+  let w = createWorkspace();
+  const id = w.activeId;
+  w = updateProduct(w, id, { query: '96110000', focus_code: '96110000' });
+  w = restoreWorkspace(JSON.parse(serializeWorkspace(w)))!;
+  expect(w.products[0].focus_code).toBe('96110000');
+  w = updateProduct(w, id, { query: 'con dấu' });
+  expect(w.products[0].focus_code).toBeUndefined();
+  w = undoProduct(w, id);
+  expect(w.products[0].focus_code).toBe('96110000');
+  w = undoProduct(w, id);
+  expect(w.products[0].focus_code).toBeUndefined();
+});

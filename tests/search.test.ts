@@ -81,3 +81,11 @@ it('retains a product phrase when generic attributes also match unrelated goods'
     '96110000',
   ]);
 });
+it('does not classify a greeting as a product but preserves cookware and product phrases', async () => {
+  const { hasSearchIntent } = await import('../src/lib/search');
+  expect(hasSearchIntent('chào')).toBe(false);
+  expect(hasSearchIntent('Xin chào bạn!')).toBe(false);
+  expect(hasSearchIntent('hello')).toBe(false);
+  expect(hasSearchIntent('chảo')).toBe(true);
+  expect(hasSearchIntent('tra chao')).toBe(true);
+});

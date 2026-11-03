@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadSnapshot } from '@/lib/db';
 import { hybridSearch } from '@/lib/semantic';
 import { groundedReply } from '@/lib/assistant';
-import { hasSearchIntent } from '@/lib/search';
+import { hasSearchIntent, isGreeting } from '@/lib/search';
 import { categories } from '@/lib/categories';
 export const runtime = 'nodejs';
 const requests: number[] = [];
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     (filters.category && !categories.some((c) => c.id === filters.category))
   )
     return NextResponse.json({ error: 'Bộ lọc không hợp lệ.' }, { status: 400 });
-  if (!hasSearchIntent(query))
+  if (isGreeting(message) || !hasSearchIntent(query))
     return NextResponse.json({
       content:
         'Bạn muốn tra mặt hàng nào? Hãy nhập tên hàng, công dụng hoặc mã HS dự kiến để bắt đầu.',

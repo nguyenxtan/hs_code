@@ -61,6 +61,7 @@ function RecordDetails({
   onClose,
   selected,
   onToggle,
+  onDiscuss,
   previous,
   next,
 }: {
@@ -68,6 +69,7 @@ function RecordDetails({
   onClose: () => void;
   selected: boolean;
   onToggle: () => void;
+  onDiscuss: () => void;
   previous?: () => void;
   next?: () => void;
 }) {
@@ -107,6 +109,12 @@ function RecordDetails({
             <ArrowRight size={15} />
           </button>
         </div>
+      </div>
+      <div className="detail-followup">
+        <button className="primary-button" onClick={onDiscuss}>
+          <MessageSquare size={16} />
+          Hỏi trợ lý về mã này
+        </button>
       </div>
       <div className="detail-body">
         <span className="eyebrow">
@@ -192,6 +200,7 @@ export default function Workspace() {
   const [result, setResult] = useState<SearchResult | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
   const [status, setStatus] = useState<{
     count: number;
     main: number;
@@ -287,7 +296,12 @@ export default function Workspace() {
           setResult(v);
         })
         .catch((e) => {
-          if (e.name !== 'AbortError') setError(e.message || 'Chưa tải được kết quả.');
+          if (e.name !== 'AbortError')
+            setError(
+              e instanceof TypeError
+                ? 'Không tải được kết quả. Kiểm tra kết nối rồi thử lại.'
+                : e.message || 'Chưa tải được kết quả.',
+            );
         })
         .finally(() => {
           if (!controller.signal.aborted) setLoading(false);
@@ -297,7 +311,7 @@ export default function Workspace() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [q, chapter, dataset, category, offset, composing]);
+  }, [q, chapter, dataset, category, offset, composing, retry]);
   useEffect(() => {
     messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' });
   }, [active?.messages.length, sending]);
@@ -313,6 +327,34 @@ export default function Workspace() {
         updateProduct(workspace, active.id, { query: q.trim(), name: q.trim().slice(0, 80) }),
       );
     }
+    setTab('chat');
+    setAssistantOpen(true);
+  }
+  function discussRecord(record: HSRecord) {
+    if (!workspace || !active) return;
+    let next = workspace;
+    let target = next.products.find((p) => p.query === record.code);
+    if (!target) {
+      const empty = !active.query && !active.messages.length && !Object.keys(active.facts).length;
+      if (!empty) {
+        if (next.products.length >= 99) {
+          notify('Đã đạt 99 hồ sơ. Hãy xuất bản sao và dọn hồ sơ trước khi tạo thêm.');
+          return;
+        }
+        next = addProduct(next);
+      }
+      next = updateProduct(next, next.activeId, {
+        query: record.code,
+        name: `Đối chiếu ${displayCode(record.code)}`,
+      });
+      target = next.products.find((p) => p.id === next.activeId)!;
+    }
+    next = updateProduct(next, target.id, { focus_code: record.code });
+    setWorkspace({ ...next, activeId: target.id });
+    setCompare(false);
+    setDetail(null);
+    if (!showResults) setQ(record.code);
+    setChat('');
     setTab('chat');
     setAssistantOpen(true);
   }
@@ -361,6 +403,12 @@ export default function Workspace() {
   async function send(startFresh = false) {
     if (!chat.trim() || sending || !workspace || !active) return;
     const message = chat.trim();
+    if (startFresh && !hasSearchIntent(message)) {
+      notify('Hãy mô tả tên hàng hoặc công dụng để trợ lý bắt đầu tra cứu.');
+      ragRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    setAssistantOpen(true);
     setChat('');
     let next = workspace;
     let id = active.id;
@@ -384,7 +432,11 @@ export default function Workspace() {
     )
       .trim()
       .slice(0, 200);
-    const initialQuery = hasSearchIntent(p.query) ? p.query : inputQuery;
+    const initialQuery = hasSearchIntent(p.query)
+      ? p.query
+      : hasSearchIntent(inputQuery)
+        ? inputQuery
+        : '';
     next = updateProduct(next, id, {
       query: initialQuery,
       name:
@@ -406,7 +458,7 @@ export default function Workspace() {
     };
     setWorkspace(next);
     setSending(true);
-    setQ(initialQuery);
+    if (!next.products.find((p) => p.id === id)?.focus_code) setQ(initialQuery);
     const target = next.products.find((x) => x.id === id)!;
     if (Object.keys(facts).length)
       notify(
@@ -422,9 +474,9 @@ export default function Workspace() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message,
-          query: target.query,
+          query: target.focus_code || target.query,
           facts: target.facts,
-          filters: { chapter, dataset, category },
+          filters: { chapter: target.focus_code ? '' : chapter, dataset, category },
           history: target.messages
             .slice(0, -1)
             .slice(-6)
@@ -547,7 +599,6 @@ export default function Workspace() {
               onSubmit={(e) => {
                 e.preventDefault();
                 setTab('chat');
-                setAssistantOpen(true);
                 send(true);
               }}
             >
@@ -680,7 +731,8 @@ export default function Workspace() {
                   <div>
                     <h1>{q ? 'Kết quả tra cứu' : 'Danh mục HS'}</h1>
                     <span className="result-count" aria-live="polite">
-                      {result ? num(result.total) : '…'} mã{chapter ? ` · Chương ${chapter}` : ''}
+                      {error ? '—' : result ? num(result.total) : '…'} mã
+                      {chapter ? ` · Chương ${chapter}` : ''}
                     </span>
                   </div>
                   <RankLens category={category} onChange={setCategory} />
@@ -690,7 +742,7 @@ export default function Workspace() {
                   facets={allFacets}
                   samples={result?.items || []}
                   query={q}
-                  loading={loading}
+                  loading={loading || !!error}
                   onChange={setChapter}
                 />
                 <div className="data-caveat">
@@ -706,7 +758,10 @@ export default function Workspace() {
             )}
             {error && (
               <div role="alert" className="error-box">
-                {error}
+                <span>{error}</span>
+                <button className="secondary-button" onClick={() => setRetry((n) => n + 1)}>
+                  Thử tải lại
+                </button>
               </div>
             )}
             {showResults && !loading && !error && result?.total === 0 && (
@@ -733,7 +788,7 @@ export default function Workspace() {
               </div>
             )}
             <div
-              className={`result-list ${loading ? 'is-loading' : ''} ${showResults ? '' : 'hidden'}`}
+              className={`result-list ${loading ? 'is-loading' : ''} ${showResults && !error ? '' : 'hidden'}`}
               aria-busy={loading}
             >
               {result?.items.map((r, i) => (
@@ -791,7 +846,7 @@ export default function Workspace() {
                 </article>
               ))}
             </div>
-            {showResults && result && result.total > 30 && (
+            {showResults && !error && result && result.total > 30 && (
               <div className="pagination">
                 <button
                   disabled={offset === 0 || loading}
@@ -858,6 +913,14 @@ export default function Workspace() {
                 </button>
               )}
             </div>
+            {active?.focus_code && (
+              <div className="code-context-note">
+                <BookOpen size={14} />
+                <span>
+                  Đang đối chiếu mã {active.focus_code}. Lọc chương vẫn giữ cho danh sách bên cạnh.
+                </span>
+              </div>
+            )}
             {profileMenu && tab === 'chat' && (
               <div className="profile-menu">
                 <label>
@@ -1157,6 +1220,7 @@ export default function Workspace() {
           onClose={() => setDetail(null)}
           selected={selected.some((r) => r.code === detail.code)}
           onToggle={() => toggle(detail)}
+          onDiscuss={() => discussRecord(detail)}
           previous={
             result && result.items.findIndex((r) => r.code === detail.code) > 0
               ? () =>

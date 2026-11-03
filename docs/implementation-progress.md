@@ -53,3 +53,9 @@ Plan: docs/superpowers/plans/2026-11-03-hs-code-mvp.md
 
 - Owner explicitly prioritized RAG as the focal point after the workbench refactor; this supersedes the earlier optional-assistant landing recommendation. Main page now exposes a primary description composer, examples and actual submit, with quick lookup secondary. See `docs/superpowers/plans/2026-11-03-rag-primary-entry.md`.
 - Latest browser verification 23/23, including source-backed primary submit and preservation of older profile facts. Desktop/mobile images inspected; the primary submit is visible without scrolling. Underlying model configuration/source extraction behavior unchanged.
+
+## Follow-through after filtering
+
+- Details now offer “Hỏi trợ lý về mã này”; code context persists per profile and its edit history, with visible distinction from lookup chapter scope. Handoff closes comparison/details, keeps lookup query/filter and retrieves the chosen code from the active snapshot.
+- Lookup fetch failures offer retry and hide stale rows; pure greeting chat does not retrieve arbitrary HS references. Original screenshot network incident was not reproducible against live API, so no asserted root cause beyond observed old UI.
+- Final checks for this change: 31 unit, 28 browser, typecheck/build passed. See `docs/superpowers/plans/2026-11-03-lookup-follow-through.md` for review/failure-reproduction evidence.

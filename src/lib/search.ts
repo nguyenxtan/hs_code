@@ -40,7 +40,20 @@ const stops = new Set([
   'duoc',
   'xin',
 ]);
+export function isGreeting(query: string): boolean {
+  const text = query
+    .normalize('NFC')
+    .toLocaleLowerCase('vi')
+    .trim()
+    .replace(/[.!?,]+$/g, '')
+    .trim();
+  // Keep accents here: “chào” is a greeting; “chảo” and “tra chao” are product queries.
+  return /^(?:(?:xin\s+)?chào(?:\s+(?:bạn|anh|chị|em))?|xin chao(?: ban)?|hello|hi|alo|cảm ơn(?: bạn)?|cam on(?: ban)?)$/.test(
+    text,
+  );
+}
 export function hasSearchIntent(query: string): boolean {
+  if (isGreeting(query)) return false;
   const p = parseQuery(query);
   return p.numeric
     ? /^\d{1,8}$/.test(p.text)

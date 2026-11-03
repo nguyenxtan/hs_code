@@ -34,9 +34,12 @@ export function updateProduct(
         else facts[k] = v;
       }
       const next = { ...p, ...patch, facts };
+      if (patch.query !== undefined && patch.query !== p.query && patch.focus_code === undefined)
+        next.focus_code = undefined;
       if (
         next.name === p.name &&
         next.query === p.query &&
+        next.focus_code === p.focus_code &&
         JSON.stringify(facts) === JSON.stringify(p.facts)
       )
         return p;
@@ -46,7 +49,10 @@ export function updateProduct(
         lastEditToken: editToken,
         history: coalesce
           ? p.history
-          : [...p.history.slice(-29), { name: p.name, query: p.query, facts: { ...p.facts } }],
+          : [
+              ...p.history.slice(-29),
+              { name: p.name, query: p.query, facts: { ...p.facts }, focus_code: p.focus_code },
+            ],
       };
     }),
   };
@@ -59,7 +65,13 @@ export function undoProduct(w: Workspace, id: string): Workspace {
       const prev = p.history.at(-1);
       return p.id !== id || !prev
         ? p
-        : { ...p, ...prev, lastEditToken: undefined, history: p.history.slice(0, -1) };
+        : {
+            ...p,
+            ...prev,
+            focus_code: prev.focus_code,
+            lastEditToken: undefined,
+            history: p.history.slice(0, -1),
+          };
     }),
   };
 }
@@ -97,6 +109,7 @@ export function extractFacts(
 export function validWorkspace(input: unknown): input is Workspace {
   if (!input || typeof input !== 'object') return false;
   const w = input as Workspace;
+  const focus = (v: unknown) => v === undefined || (typeof v === 'string' && /^\d{8}$/.test(v));
   const facts = (v: unknown) =>
     !!v &&
     typeof v === 'object' &&
@@ -115,6 +128,7 @@ export function validWorkspace(input: unknown): input is Workspace {
         typeof p.id === 'string' &&
         typeof p.name === 'string' &&
         typeof p.query === 'string' &&
+        focus(p.focus_code) &&
         facts(p.facts) &&
         Array.isArray(p.messages) &&
         p.messages.every(
@@ -130,7 +144,12 @@ export function validWorkspace(input: unknown): input is Workspace {
         ) &&
         Array.isArray(p.history) &&
         p.history.every(
-          (h) => h && typeof h.name === 'string' && typeof h.query === 'string' && facts(h.facts),
+          (h) =>
+            h &&
+            typeof h.name === 'string' &&
+            typeof h.query === 'string' &&
+            focus(h.focus_code) &&
+            facts(h.facts),
         ),
     )
   );

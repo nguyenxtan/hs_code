@@ -1968,3 +1968,46 @@ button svg,
     margin-top: 0;
   }
 }
+.detail-followup {
+  padding: 12px 24px 0;
+  display: flex;
+  justify-content: flex-end;
+}
+.detail-followup + .detail-body {
+  padding-top: 18px;
+}
+.error-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.error-box button {
+  flex-shrink: 0;
+}
+.code-context-note {
+  display: flex;
+  gap: 7px;
+  padding: 10px 16px;
+  background: #f5f8fe;
+  color: #6a84a7;
+  font-size: 12px;
+  line-height: 1.7;
+  flex-shrink: 0;
+}
+.code-context-note svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+@media (max-width: 760px) {
+  .detail-followup {
+    padding: 12px 17px 0;
+  }
+  .detail-followup button {
+    width: 100%;
+  }
+  .error-box {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
