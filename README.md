@@ -25,6 +25,11 @@ Dự án mã nguồn mở hỗ trợ tra cứu HS, lọc hàng hóa và hội th
 8. [Báo cáo độc lập của Claude Code](docs/consultations/claude-review.md)
 9. [Tổng hợp, điều chỉnh và đề xuất sau tham vấn](docs/consultations/synthesis.md)
 10. [Thiết kế VAT theo điều kiện và thời điểm](docs/vat-design.md)
+11. [Review làm sạch dữ liệu](docs/consultations/claude-cleaning-review.md)
+12. [Review thiết kế VAT](docs/consultations/claude-vat-review.md)
+13. [Tổng hợp review và phạm vi đợt 1 chờ duyệt](docs/consultations/review-status.md)
+
+Theo yêu cầu review trước khi thực hiện, hiện chưa có pipeline hay dữ liệu đã làm sạch. Chỉ raw đã được tải để kiểm tra read-only và được gitignore. Chưa có category tiện ích được gắn.
 
 ## Hướng triển khai ban đầu
 
