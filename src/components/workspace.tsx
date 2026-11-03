@@ -5,7 +5,6 @@ import {
   Search,
   Layers3,
   ArrowUpRight,
-  SlidersHorizontal,
   Plus,
   ArrowUp,
   Undo2,
@@ -37,7 +36,7 @@ import {
   restoreWorkspace,
   serializeWorkspace,
 } from '@/lib/session';
-import { categories } from '@/lib/categories';
+import SearchFilters from '@/components/search-filters';
 import { hasSearchIntent } from '@/lib/search';
 
 const STORAGE = 'hs-atlas-workspace-v1';
@@ -201,7 +200,6 @@ export default function Workspace() {
     [composing, setComposing] = useState(false),
     [offset, setOffset] = useState(0);
   const [assistantOpen, setAssistantOpen] = useState(false),
-    [showFilters, setShowFilters] = useState(false),
     [browse, setBrowse] = useState(false);
   const [storageError, setStorageError] = useState(false),
     [shareWarning, setShareWarning] = useState('');
@@ -578,103 +576,18 @@ export default function Workspace() {
                 </button>
               ))}
             </div>
-            <div className="filter-toolbar">
-              <button
-                className={`filter-trigger ${showFilters ? 'selected' : ''}`}
-                aria-expanded={showFilters}
-                onClick={() => setShowFilters((v) => !v)}
-              >
-                <SlidersHorizontal size={15} />
-                Bộ lọc{chapter || dataset !== 'all' ? <span>Đang áp dụng</span> : null}
-              </button>
-              {chapter && (
-                <button className="filter-chip" onClick={() => setChapter('')}>
-                  Chương {chapter}
-                  <X size={12} />
-                </button>
-              )}
-              {dataset !== 'all' && (
-                <button className="filter-chip" onClick={() => setDataset('all')}>
-                  {dataset === 'main' ? 'Mã chính' : 'Chương 98'}
-                  <X size={12} />
-                </button>
-              )}
-              {category && (
-                <button className="filter-chip" onClick={() => setCategory('')}>
-                  Ưu tiên: {categories.find((c) => c.id === category)?.label}
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-            <div className={`filters ${showFilters ? '' : 'hidden'}`}>
-              <div className="filter-title">
-                <SlidersHorizontal size={16} />
-                <span>Bộ lọc</span>
-              </div>
-              <label>
-                <span className="sr-only">Bộ dữ liệu</span>
-                <select
-                  aria-label="Bộ dữ liệu"
-                  value={dataset}
-                  onChange={(e) => setDataset(e.target.value)}
-                >
-                  <option value="all">Tất cả dữ liệu</option>
-                  <option value="main">11.414 mã chính</option>
-                  <option value="chapter98">457 mã chương 98</option>
-                </select>
-              </label>
-              <label>
-                <span className="sr-only">Chương</span>
-                <select
-                  aria-label="Chương"
-                  value={chapter}
-                  onChange={(e) => setChapter(e.target.value)}
-                >
-                  <option value="">Tất cả chương</option>
-                  {Array.from({ length: 98 }, (_, i) => String(i + 1).padStart(2, '0'))
-                    .filter((c) => c !== '77')
-                    .map((c) => (
-                      <option key={c} value={c}>
-                        Chương {c} (
-                        {num(
-                          (result?.available_facets || result?.facets)?.find((f) => f.chapter === c)
-                            ?.count || 0,
-                        )}
-                        )
-                      </option>
-                    ))}
-                </select>
-              </label>
-              {(chapter || dataset !== 'all') && (
-                <button
-                  className="text-button"
-                  onClick={() => {
-                    setChapter('');
-                    setDataset('all');
-                  }}
-                >
-                  Xóa bộ lọc
-                </button>
-              )}
-            </div>
-            <div className={`utility-groups ${showFilters ? '' : 'hidden'}`}>
-              <label>
-                <Layers3 size={14} />
-                <select
-                  aria-label="Ưu tiên nhóm gợi ý"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  <option value="">Ưu tiên nhóm hàng</option>
-                  {categories.map((c) => (
-                    <option value={c.id} key={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <span>Nhóm gợi ý giúp sắp xếp kết quả, không giới hạn mã tìm được.</span>
-            </div>
+            <SearchFilters
+              chapter={chapter}
+              dataset={dataset}
+              category={category}
+              facets={result?.available_facets || result?.facets || []}
+              loading={loading}
+              onChange={(next) => {
+                setChapter(next.chapter);
+                setDataset(next.dataset);
+                setCategory(next.category);
+              }}
+            />
             <div className={`results-heading ${showResults ? '' : 'hidden'}`}>
               <h2>
                 {q ? 'Kết quả tra cứu' : 'Danh mục mã HS'}{' '}
