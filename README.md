@@ -1,6 +1,6 @@
 # HS Atlas — tra cứu mã HS Việt Nam
 
-Ứng dụng mã nguồn mở để tìm, lọc, so sánh mã HS và khai báo sản phẩm qua hội thoại có nguồn tham khảo.
+Ứng dụng mã nguồn mở để bắt đầu từ mô tả hàng hóa, trao đổi với trợ lý tra cứu có nguồn, rồi lọc và so sánh mã HS. Ô tra nhanh vẫn có sẵn cho người đã biết tên hoặc mã.
 
 **Trạng thái:** local MVP đã có pipeline chuẩn hóa kỹ thuật, tra cứu/filter, 12 nhóm gợi ý, so sánh, hồ sơ trình duyệt và trợ lý truy xuất. Chưa phải công cụ tự động chốt mã hoặc VAT, chưa triển khai public production. Claude chỉ tham vấn/review; coordinator triển khai.
 
@@ -22,6 +22,7 @@ Mở **http://127.0.0.1:3100**. Không cần API key để tra cứu hoặc dùn
 - 11.414 mã chính và 457 mã chương 98 từ workbook nguồn, tổng 11.871 bản ghi.
 - Tra mã chính xác/tiền tố có dấu chấm, tên Việt/Anh, tìm không dấu và fallback typo.
 - Lọc theo chương ngay cạnh kết quả; chương 98 có nhãn bổ sung VN. 12 nhóm tiện ích còn ở bản đề xuất, chỉ ưu tiên thứ tự, không loại mã.
+- Trợ lý là lối vào chính: mô tả hàng ngay trên trang đầu, gửi để mở hội thoại cùng mã và nguồn; tạo riêng hồ sơ mới khi cần.
 - Giao diện đổi theo trạng thái: trang mở đầu gọn, thanh tìm kiếm sticky, danh sách kết quả dạng hàng; lọc chương và “Xếp trước” riêng biệt.
 - So sánh 2–4 mã; xem nguyên văn thuế, ghi chú, provenance và nguồn; chuyển mã trước/sau ngay trong chi tiết.
 - Khai báo dần, sửa/hoàn tác và giữ riêng từng sản phẩm; lưu trên thiết bị, xuất/xóa hồ sơ được.

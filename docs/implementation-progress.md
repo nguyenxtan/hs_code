@@ -48,3 +48,8 @@ Plan: docs/superpowers/plans/2026-11-03-hs-code-mvp.md
 - Source design: Claude advisory `docs/consultations/claude-filter-ux-review.md`, expanded full UI/UX review. Implementation and review-fix evidence: `docs/superpowers/plans/2026-11-03-lookup-workbench.md`.
 - Replaced filter form with chapter choices beside results and separate rank-only “Xếp trước”; removed the redundant dataset UI. Dense rows, persistent sticky search, full-screen mobile assistant, query-aware initial profile, detail navigation and compare. Saved chats remain available without blocking lookup on load.
 - Latest verification: 29 unit + 6 data + 21 browser = 56 passing tests; typecheck/build passed. Desktop shows 8 full rows and mobile 3 for “máy in”, with no horizontal overflow. Source/embeddings/legal-tax behavior unchanged.
+
+## Owner steering: foreground the retrieval assistant
+
+- Owner explicitly prioritized RAG as the focal point after the workbench refactor; this supersedes the earlier optional-assistant landing recommendation. Main page now exposes a primary description composer, examples and actual submit, with quick lookup secondary. See `docs/superpowers/plans/2026-11-03-rag-primary-entry.md`.
+- Latest browser verification 23/23, including source-backed primary submit and preservation of older profile facts. Desktop/mobile images inspected; the primary submit is visible without scrolling. Underlying model configuration/source extraction behavior unchanged.

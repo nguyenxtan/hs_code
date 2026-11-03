@@ -216,6 +216,7 @@ export default function Workspace() {
     [browse, setBrowse] = useState(false);
   const [storageError, setStorageError] = useState(false),
     [shareWarning, setShareWarning] = useState('');
+  const ragRef = useRef<HTMLTextAreaElement>(null);
   const chatRef = useRef<HTMLTextAreaElement>(null),
     editToken = useRef('');
   const searchRef = useRef<HTMLInputElement>(null),
@@ -224,7 +225,7 @@ export default function Workspace() {
     workspace?.products.find((p) => p.id === workspace.activeId) || workspace?.products[0];
 
   useEffect(() => {
-    if (window.innerWidth > 760) searchRef.current?.focus({ preventScroll: true });
+    if (window.innerWidth > 760) ragRef.current?.focus({ preventScroll: true });
     try {
       const raw = localStorage.getItem(STORAGE);
       const data = raw ? JSON.parse(raw) : null;
@@ -301,6 +302,12 @@ export default function Workspace() {
     messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' });
   }, [active?.messages.length, sending]);
   function openHelp() {
+    if (!showResults && !active?.query && !active?.messages.length) {
+      ragRef.current?.scrollIntoView({ block: 'center', behavior: 'auto' });
+      ragRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    if (!showResults && active?.query) setQ(active.query);
     if (workspace && active && !active.query.trim() && !active.messages.length && q.trim()) {
       setWorkspace(
         updateProduct(workspace, active.id, { query: q.trim(), name: q.trim().slice(0, 80) }),
@@ -351,15 +358,23 @@ export default function Workspace() {
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  async function send() {
+  async function send(startFresh = false) {
     if (!chat.trim() || sending || !workspace || !active) return;
     const message = chat.trim();
     setChat('');
     let next = workspace;
     let id = active.id;
     const fresh = message.match(/^(?:giờ tra|chuyển sang|sản phẩm mới[:\s]+)\s*(.+)/i);
-    if (fresh) {
-      next = addProduct(next, fresh[1].slice(0, 80));
+    if (
+      fresh ||
+      (startFresh && (active.query || active.messages.length || Object.keys(active.facts).length))
+    ) {
+      if (next.products.length >= 99) {
+        setChat(message);
+        notify('Đã đạt 99 hồ sơ. Hãy xuất bản sao và dọn hồ sơ trước khi tạo thêm.');
+        return;
+      }
+      next = addProduct(next, (fresh?.[1] || message).slice(0, 80));
       id = next.activeId;
     }
     const p = next.products.find((x) => x.id === id)!;
@@ -520,11 +535,67 @@ export default function Workspace() {
             <b>HS Atlas</b>
           </a>
           <div className="landing-heading">
-            <span className="eyebrow">HS ATLAS · VIỆT NAM</span>
-            <h1>Tra cứu mã HS</h1>
-            <p>Từ tên hàng đến mã tham khảo, cùng nguồn để đối chiếu.</p>
+            <span className="eyebrow">TRỢ LÝ TRA CỨU HS</span>
+            <h1>Mô tả hàng, tìm mã HS</h1>
+            <p>
+              Khai báo dần đặc điểm hàng hóa. Trợ lý tra cứu dữ liệu và dẫn nguồn để bạn đối chiếu.
+            </p>
+          </div>
+          <div className="rag-start">
+            <form
+              className="rag-composer"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setTab('chat');
+                setAssistantOpen(true);
+                send(true);
+              }}
+            >
+              <label htmlFor="rag-description">
+                <MessageSquare size={16} />
+                Mô tả mặt hàng của bạn
+              </label>
+              <textarea
+                id="rag-description"
+                ref={ragRef}
+                aria-label="Mô tả hàng hóa để hỏi trợ lý"
+                placeholder="Ví dụ: Tôi cần tra con dấu đóng mực bằng tay, vỏ nhựa, mặt cao su…"
+                value={chat}
+                maxLength={1500}
+                onChange={(e) => setChat(e.target.value)}
+                rows={3}
+              />
+              <div className="rag-composer-actions">
+                <span>
+                  <BookOpen size={15} />
+                  {status ? `${num(status.count)} mã` : 'Dữ liệu HS'} · có nguồn tham khảo
+                </span>
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={sending || !chat.trim() || !workspace}
+                >
+                  Tra cùng trợ lý <ArrowUpRight size={17} />
+                </button>
+              </div>
+            </form>
+            <div className="rag-examples">
+              <span>Thử mô tả</span>
+              {['Con dấu bằng tay', 'Máy in văn phòng', 'Cà phê rang'].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    setChat(t);
+                    ragRef.current?.focus({ preventScroll: true });
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="search-box">
+            <span className="quick-label">Tra nhanh</span>
             <Search size={22} />
             <input
               ref={searchRef}
@@ -565,7 +636,7 @@ export default function Workspace() {
               onClick={() => (assistantOpen ? setAssistantOpen(false) : openHelp())}
             >
               <MessageSquare size={18} />
-              <span>Hỗ trợ tìm mã</span>
+              <span>Hỏi trợ lý HS</span>
             </button>
             <button
               className="data-status"
@@ -579,24 +650,12 @@ export default function Workspace() {
           </div>
           {!showResults && (
             <div className="landing-options">
-              <div className="quick-search">
-                <span>Thử tìm</span>
-                {['con dấu', 'máy in', 'cà phê', '01.01'].map((t) => (
-                  <button key={t} onClick={() => setQ(t)}>
-                    {t}
-                    <ArrowUpRight size={12} />
-                  </button>
-                ))}
-              </div>
               <button className="browse-button" onClick={() => setBrowse(true)}>
                 Duyệt theo chương <ArrowRight size={15} />
               </button>
               <p className="search-hint">
                 Tìm bằng tên Việt, tiếng Anh, không dấu hoặc một phần mã.
               </p>
-              <button className="intro-help" onClick={openHelp}>
-                Chưa rõ tên hàng? Mô tả bằng lời <ArrowRight size={15} />
-              </button>
             </div>
           )}
         </header>

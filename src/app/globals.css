@@ -278,12 +278,14 @@ button svg,
   border-radius: 4px;
 }
 .landing-heading,
-.landing-options {
+.landing-options,
+.rag-start,
+.quick-label {
   display: none;
 }
 .is-landing .topbar {
   grid-template-columns: 1fr auto;
-  grid-template-rows: 48px auto auto auto;
+  grid-template-rows: 48px auto auto auto auto;
   gap: 0;
   padding: 10px 32px 48px;
   position: relative;
@@ -302,7 +304,7 @@ button svg,
   display: block;
   grid-area: 2/1/3/3;
   text-align: center;
-  margin: 95px auto 30px;
+  margin: 48px auto 25px;
 }
 .landing-heading h1 {
   font-size: 38px;
@@ -317,12 +319,12 @@ button svg,
   font-size: 14px;
 }
 .is-landing .search-box {
-  grid-area: 3/1/4/3;
+  grid-area: 4/1/5/3;
   max-width: 720px;
   width: 100%;
   margin: 0 auto;
-  height: 62px;
-  padding: 0 18px;
+  height: 48px;
+  padding: 0 14px;
   box-shadow: 0 8px 24px #183a6c05;
 }
 .is-landing .search-box input {
@@ -333,7 +335,7 @@ button svg,
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 18px 20px;
-  grid-area: 4/1/5/3;
+  grid-area: 5/1/6/3;
   max-width: 720px;
   width: 100%;
   margin: 14px auto 0;
@@ -1417,7 +1419,7 @@ button svg,
   .is-landing .topbar {
     padding: 12px 20px 30px;
     grid-template-columns: 1fr auto;
-    grid-template-rows: 44px auto auto auto;
+    grid-template-rows: 44px auto auto auto auto;
   }
   .is-landing .brand b {
     display: block;
@@ -1432,7 +1434,7 @@ button svg,
     gap: 6px;
   }
   .is-landing .landing-heading {
-    margin: 72px auto 28px;
+    margin: 35px auto 24px;
   }
   .landing-heading h1 {
     font-size: 30px;
@@ -1445,7 +1447,7 @@ button svg,
     margin: 0 auto;
   }
   .is-landing .search-box {
-    height: 56px;
+    height: 48px;
     padding: 0 12px;
   }
   .is-landing .landing-options {
@@ -1785,4 +1787,184 @@ button svg,
   padding: 12px 20px;
   background: #fff;
   border-top: 1px solid var(--line);
+}
+
+/* The assistant is the primary entry; direct lookup remains available below it. */
+.help-toggle {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.help-toggle:hover {
+  background: #1d50b8;
+  color: #fff;
+}
+.is-landing .rag-start {
+  display: block;
+  grid-area: 3/1/4/3;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto 22px;
+}
+.rag-composer {
+  background: #fff;
+  border: 1px solid #b7cdf4;
+  border-radius: 14px;
+  padding: 18px 20px 16px;
+  box-shadow: 0 8px 32px #225ada0b;
+}
+.rag-composer:focus-within {
+  border-color: #4f83e7;
+  box-shadow: 0 0 0 3px #2561dd0b;
+}
+.rag-composer > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3b629c;
+}
+.rag-composer textarea {
+  padding: 15px 0 10px;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  min-height: 105px;
+  resize: vertical;
+  font-size: 15px;
+  line-height: 1.9;
+  background: transparent;
+}
+.rag-composer textarea::placeholder {
+  color: #96a3b5;
+}
+.rag-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #edf1f8;
+  padding-top: 13px;
+}
+.rag-composer-actions > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8798b0;
+  font-size: 12px;
+}
+.rag-composer .primary-button {
+  min-height: 44px;
+}
+.rag-examples {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #97a3b4;
+}
+.rag-examples button {
+  font-size: 12px;
+  color: #657f9f;
+  background: #edf2f9;
+  padding: 3px 10px;
+  border-radius: 6px;
+  min-height: 32px;
+}
+.rag-examples button:hover {
+  color: var(--blue);
+  background: #e2ecff;
+}
+.is-landing .quick-label {
+  display: block;
+  color: #7890ae;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-right: 2px;
+}
+.is-landing .search-box input {
+  font-size: 14px;
+}
+.is-landing .landing-options {
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-top: 8px;
+}
+.is-landing .search-hint {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  font-size: 12px;
+}
+.is-landing .browse-button {
+  grid-column: 2;
+  grid-row: 1;
+}
+.is-landing .results-footer {
+  margin-top: 20px;
+}
+@media (max-width: 760px) {
+  .is-landing .landing-heading {
+    margin: 28px auto 20px;
+  }
+  .landing-heading h1 {
+    font-size: 28px;
+  }
+  .is-landing .rag-start {
+    margin-bottom: 22px;
+  }
+  .rag-composer {
+    padding: 16px 15px 14px;
+  }
+  .rag-composer textarea {
+    font-size: 16px;
+    min-height: 120px;
+  }
+  .rag-composer-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .rag-composer-actions > span {
+    justify-content: center;
+    font-size: 12px;
+  }
+  .rag-composer .primary-button {
+    width: 100%;
+    min-height: 46px;
+  }
+  .rag-examples {
+    gap: 5px;
+  }
+  .rag-examples > span {
+    display: none;
+  }
+  .rag-examples button {
+    font-size: 12px;
+    min-height: 36px;
+    padding: 4px 8px;
+  }
+  .is-landing .search-box input {
+    font-size: 16px;
+  }
+  .is-landing .landing-options {
+    grid-template-columns: 1fr;
+    margin-top: 10px;
+    gap: 5px;
+  }
+  .is-landing .search-hint {
+    grid-row: 1;
+  }
+  .is-landing .browse-button {
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 0;
+  }
+  .is-landing .results-footer {
+    margin-top: 0;
+  }
 }

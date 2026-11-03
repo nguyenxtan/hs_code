@@ -141,3 +141,64 @@ test('composition state preserves the same search element through the layout tra
   await expect(page.locator('.result-row').first()).toBeVisible();
   await expect(input).toHaveValue('máy in');
 });
+
+test('primary assistant entry starts a sourced conversation directly from the home page', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const description = page.getByRole('textbox', { name: 'Mô tả hàng hóa để hỏi trợ lý' });
+  await expect(description).toBeVisible();
+  await description.fill('Tra HS con dấu bằng tay');
+  const send = page.getByRole('button', { name: 'Tra cùng trợ lý', exact: true });
+  await expect(send).toBeInViewport();
+  await send.click();
+  await expect(page.getByRole('dialog', { name: 'Hỗ trợ tìm mã' })).toBeVisible();
+  await expect(page.locator('.thinking')).toHaveCount(0);
+  await expect(page.locator('.references button').first()).toBeVisible();
+  await expect(page.locator('.messages')).toContainText('Tra HS con dấu bằng tay');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' })).toBeFocused();
+  await expect(page.locator('.code-link').first()).toHaveText('9611.00.00');
+});
+
+test('a new home-page description keeps earlier product facts in their original profile', async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'hs-atlas-workspace-v1',
+      JSON.stringify({
+        version: 1,
+        activeId: 'stamp',
+        products: [
+          {
+            id: 'stamp',
+            name: 'Con dấu',
+            query: 'con dấu',
+            facts: { body: 'kim loại' },
+            history: [],
+            messages: [{ role: 'user', content: 'Con dấu vỏ kim loại' }],
+          },
+        ],
+      }),
+    ),
+  );
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'Mô tả hàng hóa để hỏi trợ lý' }).fill('máy in');
+  await page.getByRole('button', { name: 'Tra cùng trợ lý', exact: true }).click();
+  await expect(page.locator('.thinking')).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => JSON.parse(localStorage.getItem('hs-atlas-workspace-v1')!).products.length,
+      ),
+    )
+    .toBe(2);
+  const products = await page.evaluate(
+    () => JSON.parse(localStorage.getItem('hs-atlas-workspace-v1')!).products,
+  );
+  expect(products[0].facts).toEqual({ body: 'kim loại' });
+  expect(products[1].query).toBe('máy in');
+  expect(products[1].facts).toEqual({});
+});

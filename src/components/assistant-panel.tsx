@@ -55,7 +55,13 @@ export default function AssistantPanel({
       observer.disconnect();
       dialog.close();
       document.body.style.overflow = overflow;
-      if (opener?.isConnected) opener.focus({ preventScroll: true });
+      if (opener?.isConnected && opener !== document.body && opener.getClientRects().length) {
+        opener.focus({ preventScroll: true });
+      } else {
+        document
+          .querySelector<HTMLInputElement>('input[aria-label="Tìm mã HS hoặc tên hàng"]')
+          ?.focus({ preventScroll: true });
+      }
       if (!media.matches) window.scrollTo({ top: scroll, behavior: 'instant' });
     };
   }, [open]);

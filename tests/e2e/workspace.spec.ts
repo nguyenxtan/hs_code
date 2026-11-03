@@ -27,9 +27,13 @@ test('search, filter, compare and share without product facts', async ({ page })
 });
 test('conversation facts are corrected, undone and persisted on this browser', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Hỗ trợ tìm mã', exact: true }).click();
-  const box = page.getByRole('textbox', { name: 'Mô tả hàng hóa' });
-  for (const text of ['Tra HS con dấu bằng tay', 'Có sẵn mực', 'À phải chấm khay mực ngoài']) {
+  await page
+    .getByRole('textbox', { name: 'Mô tả hàng hóa để hỏi trợ lý', exact: true })
+    .fill('Tra HS con dấu bằng tay');
+  await page.getByRole('button', { name: 'Tra cùng trợ lý', exact: true }).click();
+  await expect(page.locator('.thinking')).toHaveCount(0);
+  const box = page.getByRole('textbox', { name: 'Mô tả hàng hóa', exact: true });
+  for (const text of ['Có sẵn mực', 'À phải chấm khay mực ngoài']) {
     await box.fill(text);
     await page.getByRole('button', { name: 'Gửi mô tả' }).click();
     await expect(page.locator('.thinking')).toHaveCount(0);
