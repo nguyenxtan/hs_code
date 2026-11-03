@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Snapshot, SearchOptions, SearchResult } from './types';
-import { searchRecords, parseQuery } from './search';
+import { searchRecords, parseQuery, fold } from './search';
 export function cosine(a: number[], b: number[]): number {
   if (a.length !== b.length) return 0;
   let dot = 0,
@@ -18,7 +18,15 @@ export function fuseRanks(a: string[], b: string[]): string[] {
   const scores = new Map<string, number>();
   for (const list of [a, b])
     list.forEach((code, i) => scores.set(code, (scores.get(code) || 0) + 1 / (60 + i + 1)));
-  return [...scores].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).map((x) => x[0]);
+  const lexicalRank = new Map(a.map((code, i) => [code, i]));
+  return [...scores]
+    .sort(
+      (x, y) =>
+        y[1] - x[1] ||
+        (lexicalRank.get(x[0]) ?? Infinity) - (lexicalRank.get(y[0]) ?? Infinity) ||
+        x[0].localeCompare(y[0]),
+    )
+    .map((x) => x[0]);
 }
 export type EmbeddingIndex = {
   version: string;
@@ -46,6 +54,7 @@ export async function hybridSearch(
   options: SearchOptions,
 ): Promise<SearchResult> {
   const lexical = searchRecords(snapshot.records, options);
+  if (!lexical.total) return { ...lexical, mode: 'lexical_no_candidates' };
   if (process.env.HS_EMBEDDINGS_ENABLED !== 'true' || !options.q || parseQuery(options.q).numeric)
     return { ...lexical, mode: 'lexical' };
   try {
@@ -74,21 +83,26 @@ export async function hybridSearch(
         )
         .map((r) => [r.code, r]),
     );
-    const semantic = index.rows
-      .filter((r) => allowed.has(r.code))
-      .map((r) => ({ code: r.code, score: cosine(vector, r.vector) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 40)
-      .map((r) => r.code);
     const lex = searchRecords(snapshot.records, {
       ...options,
       limit: snapshot.records.length,
       offset: 0,
     });
+    const lexicalCodes = new Set(lex.items.map((r) => r.code));
+    const semantic = index.rows
+      .filter((r) => lexicalCodes.has(r.code))
+      .map((r) => ({ code: r.code, score: cosine(vector, r.vector) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 40)
+      .map((r) => r.code);
     const merged = fuseRanks(
       lex.items.map((r) => r.code),
       semantic,
     );
+    // Preserve exact phrase matches ahead of vector-only relevance differences.
+    const phrase = parseQuery(options.q).text;
+    const exactPhrase = (code: string) => fold(allowed.get(code)!.description).includes(phrase);
+    merged.sort((a, b) => Number(exactPhrase(b)) - Number(exactPhrase(a)));
     const offset = options.offset ?? 0,
       limit = options.limit ?? 30;
     const counts = new Map<string, number>();

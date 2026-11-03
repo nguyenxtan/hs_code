@@ -35,5 +35,21 @@ class PreparationTests(unittest.TestCase):
         obj={'code':'01012100','raw':{'note':'a\nb','vat_raw':''}}
         self.assertEqual(self.module.stable_json(obj), '{"code":"01012100","raw":{"note":"a\\nb","vat_raw":""}}\n')
 
+
+class SnapshotIdentityTests(unittest.TestCase):
+    def setUp(self):
+        self.module=importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(self.module)
+
+    def test_only_pinned_files_participate_in_identity(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as t:
+            root=Path(t); (root/'source.json').write_text('[]'); (root/'.DS_Store').write_text('noise')
+            self.assertEqual([p.name for p in self.module.source_files(root,{'sources':[{'name':'source.json'}]})],['source.json'])
+
+    def test_changed_normalized_records_change_identity_even_without_ruleset_bump(self):
+        a=self.module.snapshot_identity([{'code':'01012100','description':'A'}],{'source':'hash'})
+        b=self.module.snapshot_identity([{'code':'01012100','description':'B'}],{'source':'hash'})
+        self.assertNotEqual(a,b)
+
 if __name__ == '__main__':
     unittest.main()

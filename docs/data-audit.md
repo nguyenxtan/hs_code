@@ -30,7 +30,9 @@ JSON và CSV khớp từng trường/từng dòng bằng parser chuẩn. Sheet `
 - Từng dòng có index, sheet, hash nguồn và phiên bản ruleset.
 - Chạy lại cùng input cho output giống byte; raw hash trước/sau khớp.
 
-Phiên bản snapshot: `vn-hs2022-ccc1804d9d39-technical-v1`. Danh tính snapshot bao gồm hash của tất cả file nguồn, không chỉ JSON main. Checksum nguồn được pin trong `scripts/sources.json`.
+Phiên bản snapshot sau hardening: `vn-hs2022-89808434c391-technical-v1`. Danh tính gồm đúng các file pin và nội dung records dẫn xuất; file lạ như `.DS_Store` không làm đổi bản. Checksum nguồn được pin trong `scripts/sources.json`; importer từ chối cùng version khác nội dung thay vì ghi đè.
+
+Có 10 bản ghi chương 98 có mã tương ứng không có trong bộ main, ngoài 3 ô mã tương ứng trống đã thống kê. Giữ nguyên giá trị nguồn, chưa sửa mapping bằng suy đoán.
 
 ## File đầu ra local
 

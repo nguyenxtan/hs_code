@@ -24,7 +24,7 @@ Importer có transaction, khóa theo tác vụ, khóa mã theo version và idemp
 
 `npm run data:embed` tải model `Xenova/multilingual-e5-small` vào `.cache/models`, dùng CPU và model quantized. Lần đầu cần mạng để tải model; các lượt sau dùng cache. Cần kiểm tra license model và nguồn khi phân phối, không commit weights hoặc vectors.
 
-Index ghi nguyên tử, có ID snapshot/model/dimensions; script có thể chạy lại để tiếp tục. Bật `HS_EMBEDDINGS_ENABLED=true` và restart app sau khi index hoàn thành. Mất index, khác snapshot hoặc model lỗi thì dùng lexical fallback. Index một phần được gắn mode riêng, không coi đã phủ toàn dataset. Kết quả ngữ nghĩa là ứng viên, không phải xác nhận mã.
+Index ghi nguyên tử, có ID snapshot/model/dimensions; script có thể chạy lại để tiếp tục. Bật `HS_EMBEDDINGS_ENABLED=true` và restart app sau khi index hoàn thành. Mất index, khác snapshot hoặc model lỗi thì dùng lexical fallback. Index một phần được gắn mode riêng, không coi đã phủ toàn dataset. Sau review, vector chỉ xếp lại ứng viên từ khóa/fuzzy; không có căn cứ từ khóa thì trả rỗng, không đưa top-40 vô điều kiện. Đây là lựa chọn bảo thủ trước khi có bộ gold và alias duyệt; không bảo đảm tìm được mọi tên thương mại.
 
 Giới hạn dev: vectors nằm file runtime, tìm cosine ở app; chưa cần ANN cho quy mô này. Không xem việc tạo đủ vectors là benchmark recall. Giới hạn memory/tải đồng thời và chất lượng search cần pilot trước public deployment.
 
@@ -38,7 +38,7 @@ Quota đăng nhập Codex không được dùng thay project API key. Theo [Open
 
 ## Phiên, chia sẻ và quyền riêng tư
 
-Hồ sơ/chat/facts/revisions lưu trong localStorage của origin. Không đồng bộ xuyên thiết bị; xóa dữ liệu trình duyệt sẽ mất. Xuất hồ sơ local khi cần giữ bản sao. Nút xuất hồ sơ ghi rõ có lời khai.
+Hồ sơ/chat/facts/revisions lưu trong localStorage của origin. References chỉ giữ code/version, không lặp raw trong từng tin. Khi mở reference, app đọc đúng version nếu còn trong database; file mode chỉ có thể đọc snapshot hiện tại và báo rõ khi bản cũ không còn. Không đồng bộ xuyên thiết bị; xóa dữ liệu trình duyệt sẽ mất. Lưu thất bại có cảnh báo cố định kèm export. Nút xuất hồ sơ ghi rõ có lời khai.
 
 Link chia sẻ chỉ có code và snapshot ID, không có truy vấn/facts/chat. Người nhận cần app có dữ liệu; bản đầu cảnh báo đối chiếu snapshot nhưng chưa phục hồi tự động snapshot lịch sử. File export mã không kèm lời khai. Không gửi truy vấn hay feedback tới dịch vụ thu thập thống kê.
 

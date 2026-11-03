@@ -51,6 +51,7 @@ Browser tests cần dữ liệu local và Chromium. [Runbook](docs/runbook.md) c
 - [Chiến lược dữ liệu](docs/data-strategy.md), [nguồn/giấy phép](docs/data-sources.md), [VAT](docs/vat-design.md).
 - Claude: [kiến trúc](docs/consultations/claude-review.md), [làm sạch](docs/consultations/claude-cleaning-review.md), [VAT](docs/consultations/claude-vat-review.md), [UX](docs/consultations/claude-ux-review.md).
 - [Tổng hợp review](docs/consultations/review-status.md), [kế hoạch thực hiện](docs/superpowers/plans/2026-11-03-hs-code-mvp.md), [tiến độ và quyết định](docs/implementation-progress.md).
+- [Review code/UI của Claude](docs/consultations/claude-implementation-review.md) và [xử lý phát hiện](docs/consultations/implementation-review-response.md).
 
 Các báo cáo tư vấn là tài liệu theo thời điểm, có giả định chưa xác minh; xem runbook và progress để biết trạng thái code thực tế.
 

@@ -41,3 +41,19 @@ it('keeps lexical results when an enabled vector index is missing', async () => 
     else process.env.HS_EMBEDDINGS_PATH = path;
   }
 });
+it('prefers lexical evidence over a semantic-only code when scores tie', () => {
+  expect(fuseRanks(['96110000'], ['82121000'])[0]).toBe('96110000');
+});
+it('does not invoke semantic retrieval when there is no lexical evidence', async () => {
+  const before = process.env.HS_EMBEDDINGS_ENABLED;
+  process.env.HS_EMBEDDINGS_ENABLED = 'true';
+  try {
+    const s = { version: 'test', records: [] } as unknown as Snapshot;
+    const r = await hybridSearch(s, { q: 'xqzvw' });
+    expect(r.total).toBe(0);
+    expect(r.mode).toBe('lexical_no_candidates');
+  } finally {
+    if (before === undefined) delete process.env.HS_EMBEDDINGS_ENABLED;
+    else process.env.HS_EMBEDDINGS_ENABLED = before;
+  }
+});

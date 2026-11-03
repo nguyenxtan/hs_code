@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadSnapshot } from '@/lib/db';
 import { hybridSearch } from '@/lib/semantic';
 import { categories } from '@/lib/categories';
+import { searchRecords } from '@/lib/search';
 export const runtime = 'nodejs';
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams,
@@ -26,7 +27,13 @@ export async function GET(req: NextRequest) {
       limit: 30,
       offset: Math.max(0, Number(p.get('offset')) || 0),
     });
-    return NextResponse.json({ ...result, version: s.version, source_date: s.source_date });
+    const available_facets = searchRecords(s.records, { q, dataset, limit: 1 }).facets;
+    return NextResponse.json({
+      ...result,
+      available_facets,
+      version: s.version,
+      source_date: s.source_date,
+    });
   } catch {
     return NextResponse.json(
       { error: 'Chưa nạp được dữ liệu. Chạy bước chuẩn bị dữ liệu theo README.' },

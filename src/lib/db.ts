@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { Pool } from 'pg';
-import type { Snapshot } from './types';
+import type { Snapshot, HSRecord } from './types';
 let cached: Promise<Snapshot> | undefined;
 export async function loadSnapshot(): Promise<Snapshot> {
   if (!cached)
@@ -30,4 +30,20 @@ export async function loadSnapshot(): Promise<Snapshot> {
       throw e;
     });
   return cached;
+}
+export async function loadRecord(code: string, version?: string): Promise<HSRecord | null> {
+  const active = await loadSnapshot();
+  if (!version || version === active.version)
+    return active.records.find((r) => r.code === code) || null;
+  if (!process.env.DATABASE_URL) return null;
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  try {
+    const result = await pool.query('SELECT entry FROM hs_records WHERE version=$1 AND code=$2', [
+      version,
+      code,
+    ]);
+    return result.rows[0]?.entry || null;
+  } finally {
+    await pool.end();
+  }
 }

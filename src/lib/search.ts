@@ -11,8 +11,8 @@ export function fold(text: string): string {
 }
 export function parseQuery(query: string): { text: string; numeric: boolean } {
   const text = query.trim();
-  const digits = text.replace(/[.\s]/g, '');
-  return /^[\d.\s]+$/.test(text) && /^\d{1,8}$/.test(digits)
+  const digits = text.replace(/[.\s/_-]/g, '');
+  return /^[\d.\s/_-]+$/.test(text) && /^\d+$/.test(digits)
     ? { text: digits, numeric: true }
     : { text: fold(text), numeric: false };
 }
@@ -31,7 +31,21 @@ const stops = new Set([
   'va',
   'mot',
   'chiec',
+  'giup',
+  'tim',
+  'can',
+  'muon',
+  'biet',
+  've',
+  'duoc',
+  'xin',
 ]);
+export function hasSearchIntent(query: string): boolean {
+  const p = parseQuery(query);
+  return p.numeric
+    ? /^\d{1,8}$/.test(p.text)
+    : p.text.split(' ').some((t) => t.length > 1 && !stops.has(t));
+}
 function grams(s: string): Set<string> {
   const v = new Set<string>();
   for (let i = 0; i < s.length - 2; i++) v.add(s.slice(i, i + 3));
@@ -46,7 +60,11 @@ function similarity(a: string, b: string): number {
 }
 export function searchRecords(records: HSRecord[], options: SearchOptions): SearchResult {
   const parsed = parseQuery(options.q ?? '');
-  const terms = parsed.text.split(' ').filter((t) => t && !stops.has(t));
+  const words = parsed.text.split(' ');
+  const hasProductTerm = words.some((t) => t && !stops.has(t));
+  // Keep “con” inside product names (con dấu, con lăn). Dropping it makes
+  // unaccented “dấu” indistinguishable from “đầu” plus generic attributes.
+  const terms = words.filter((t) => t && (!stops.has(t) || (t === 'con' && hasProductTerm)));
   const facts = (options.facts ?? []).map(fold);
   let hits = records
     .filter(
@@ -60,7 +78,8 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
         allTerms = false;
       if (parsed.numeric)
         score = r.code === parsed.text ? 10000 : r.code.startsWith(parsed.text) ? 1000 : 0;
-      else if (!parsed.text || !terms.length) score = 1;
+      else if (!parsed.text) score = 1;
+      else if (!terms.length) score = 0;
       else {
         const words = new Set(text.match(/[a-z0-9]+/g) || []);
         const matched = terms.filter((t) =>
@@ -77,7 +96,7 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
     .filter((x) => x.score > 0);
   if (!parsed.numeric && terms.length > 1 && hits.some((x) => x.allTerms))
     hits = hits.filter((x) => x.allTerms);
-  if (!hits.length && !parsed.numeric && parsed.text.length >= 4) {
+  if (!hits.length && !parsed.numeric && terms.length > 0 && parsed.text.length >= 4) {
     hits = records
       .filter(
         (r) =>

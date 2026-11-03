@@ -21,16 +21,24 @@ import {
   Check,
   MessageSquare,
 } from 'lucide-react';
-import type { HSRecord, SearchResult, Workspace as WorkspaceData, Message } from '@/lib/types';
+import type {
+  HSRecord,
+  SearchResult,
+  Workspace as WorkspaceData,
+  Message,
+  CodeReference,
+} from '@/lib/types';
 import {
   createWorkspace,
   addProduct,
   updateProduct,
   undoProduct,
   extractFacts,
-  validWorkspace,
+  restoreWorkspace,
+  serializeWorkspace,
 } from '@/lib/session';
 import { categories } from '@/lib/categories';
+import { hasSearchIntent } from '@/lib/search';
 
 const STORAGE = 'hs-atlas-workspace-v1';
 const factLabels: Record<string, string> = {
@@ -58,7 +66,13 @@ function Dialog({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    ref.current?.showModal();
+    const opener = document.activeElement as HTMLElement | null;
+    const dialog = ref.current;
+    dialog?.showModal();
+    return () => {
+      dialog?.close();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
   }, []);
   return (
     <dialog
@@ -189,6 +203,12 @@ export default function Workspace() {
   const [assistantOpen, setAssistantOpen] = useState(false),
     [showFilters, setShowFilters] = useState(false),
     [browse, setBrowse] = useState(false);
+  const [storageError, setStorageError] = useState(false),
+    [shareWarning, setShareWarning] = useState('');
+  const helpRequested = useRef(false),
+    assistantRef = useRef<HTMLElement>(null),
+    chatRef = useRef<HTMLTextAreaElement>(null),
+    editToken = useRef('');
   const searchRef = useRef<HTMLInputElement>(null),
     messagesRef = useRef<HTMLDivElement>(null);
   const active =
@@ -198,7 +218,7 @@ export default function Workspace() {
     try {
       const raw = localStorage.getItem(STORAGE);
       const data = raw ? JSON.parse(raw) : null;
-      const saved = validWorkspace(data) ? data : createWorkspace();
+      const saved = restoreWorkspace(data) || createWorkspace();
       setWorkspace(saved);
       setAssistantOpen(saved.products.some((p) => p.messages.length > 0));
     } catch {
@@ -215,9 +235,10 @@ export default function Workspace() {
   useEffect(() => {
     if (workspace)
       try {
-        localStorage.setItem(STORAGE, JSON.stringify(workspace));
+        localStorage.setItem(STORAGE, serializeWorkspace(workspace));
+        setStorageError(false);
       } catch {
-        setToast('Trình duyệt chưa lưu được hồ sơ. Bạn nên xuất bản sao.');
+        setStorageError(true);
       }
   }, [workspace]);
   useEffect(() => {
@@ -241,6 +262,7 @@ export default function Workspace() {
   }, [q, chapter, dataset, category]);
   useEffect(() => {
     if (composing) return;
+    setLoading(true);
     const controller = new AbortController();
     const timer = setTimeout(() => {
       setLoading(true);
@@ -248,8 +270,10 @@ export default function Workspace() {
       const params = new URLSearchParams({ q, chapter, dataset, category, offset: String(offset) });
       fetch('/api/search?' + params, { signal: controller.signal })
         .then(async (r) => {
-          const v = await r.json();
-          if (!r.ok) throw Error(v.error);
+          const v = await r
+            .json()
+            .catch(() => ({ error: 'Chưa đọc được phản hồi. Vui lòng thử lại.' }));
+          if (!r.ok || v.error) throw Error(v.error);
           setResult(v);
         })
         .catch((e) => {
@@ -267,6 +291,39 @@ export default function Workspace() {
   useEffect(() => {
     messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' });
   }, [active?.messages.length, sending]);
+  useEffect(() => {
+    if (!assistantOpen || !helpRequested.current) return;
+    const id = requestAnimationFrame(() => {
+      if (window.innerWidth <= 760)
+        assistantRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' });
+      chatRef.current?.focus({ preventScroll: true });
+      helpRequested.current = false;
+    });
+    return () => cancelAnimationFrame(id);
+  }, [assistantOpen]);
+  function openHelp() {
+    helpRequested.current = true;
+    setTab('chat');
+    setAssistantOpen(true);
+  }
+  function beginEdit() {
+    editToken.current = crypto.randomUUID();
+  }
+  async function openReference(ref: CodeReference) {
+    try {
+      const response = await fetch(
+        '/api/record?' + new URLSearchParams({ code: ref.code, version: ref.version }),
+      );
+      const data = await response
+        .json()
+        .catch(() => ({ error: 'Chưa đọc được phản hồi. Vui lòng thử lại.' }));
+      if (!response.ok || data.error) throw Error(data.error);
+      setDetail(data.record);
+      if (!ref.version) notify('Tham chiếu cũ chưa ghi phiên bản. Đang xem dữ liệu hiện tại.');
+    } catch (e) {
+      notify((e as Error).message || 'Chưa mở được tham chiếu.');
+    }
+  }
   function notify(s: string) {
     setToast(s);
   }
@@ -303,16 +360,19 @@ export default function Workspace() {
       id = next.activeId;
     }
     const p = next.products.find((x) => x.id === id)!;
-    const facts = extractFacts(message);
-    const initialQuery =
-      p.query ||
-      (fresh ? fresh[1] : message.replace(/^(?:tra\s+(?:hs\s+)?|tìm\s+(?:mã\s+)?)/i, '')).slice(
-        0,
-        200,
-      );
+    const facts = extractFacts(message, p.facts);
+    const inputQuery = (
+      fresh ? fresh[1] : message.replace(/^(?:tra\s+(?:hs\s+)?|tìm\s+(?:mã\s+)?)/i, '')
+    )
+      .trim()
+      .slice(0, 200);
+    const initialQuery = hasSearchIntent(p.query) ? p.query : inputQuery;
     next = updateProduct(next, id, {
       query: initialQuery,
-      name: p.name === 'Sản phẩm mới' ? initialQuery.slice(0, 80) : p.name,
+      name:
+        p.name === 'Sản phẩm mới' && hasSearchIntent(initialQuery)
+          ? initialQuery.slice(0, 80)
+          : p.name,
       facts,
     });
     next = {
@@ -330,7 +390,14 @@ export default function Workspace() {
     setSending(true);
     setQ(initialQuery);
     const target = next.products.find((x) => x.id === id)!;
-    if (Object.keys(facts).length) notify('Đã cập nhật lời khai. Có thể hoàn tác trong Hồ sơ.');
+    if (Object.keys(facts).length)
+      notify(
+        'Đã cập nhật: ' +
+          Object.entries(facts)
+            .map(([k, v]) => (factLabels[k] || k) + ': ' + (v || 'đã bỏ'))
+            .join('; ') +
+          '. Có thể hoàn tác.',
+      );
     try {
       const response = await fetch('/api/assistant', {
         method: 'POST',
@@ -339,13 +406,17 @@ export default function Workspace() {
           message,
           query: target.query,
           facts: target.facts,
+          filters: { chapter, dataset, category },
           history: target.messages
+            .slice(0, -1)
             .slice(-6)
             .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) })),
         }),
       });
-      const data = await response.json();
-      if (!response.ok) throw Error(data.error);
+      const data = await response
+        .json()
+        .catch(() => ({ error: 'Chưa đọc được phản hồi. Vui lòng thử lại.' }));
+      if (!response.ok || data.error) throw Error(data.error);
       const reply: Message = {
         role: 'assistant',
         content: data.content,
@@ -373,7 +444,7 @@ export default function Workspace() {
                   ? {
                       ...x,
                       messages: [
-                        ...x.messages,
+                        ...x.messages.slice(-49),
                         {
                           role: 'assistant',
                           content:
@@ -396,7 +467,9 @@ export default function Workspace() {
       : `${window.location.origin}/?codes=${selected.map((r) => r.code).join(',')}&snapshot=${encodeURIComponent(status?.version || '')}`;
   const showResults = !!(q.trim() || chapter || dataset !== 'all' || category || browse);
   useEffect(() => {
-    const codes = new URLSearchParams(window.location.search)
+    const params = new URLSearchParams(window.location.search);
+    const wantedVersion = params.get('snapshot') || '';
+    const codes = params
       .get('codes')
       ?.split(',')
       .filter((c) => /^\d{8}$/.test(c))
@@ -404,9 +477,25 @@ export default function Workspace() {
     if (!codes?.length) return;
     Promise.all(codes.map((c) => fetch('/api/search?q=' + c).then((r) => r.json())))
       .then((all) => {
-        setSelected(all.flatMap((x) => x.items || []).filter((r) => codes.includes(r.code)));
-        setCompare(true);
-        setToast('Đã mở các mã được chia sẻ. Đối chiếu snapshot trước khi sử dụng.');
+        const found = all.flatMap((x) => x.items || []).filter((r) => codes.includes(r.code));
+        setSelected(found);
+        setCompare(found.length >= 2);
+        if (found.length === 1) setQ(found[0].code);
+        const missing = codes.filter((c) => !found.some((r) => r.code === c));
+        const current = all[0]?.version;
+        const messages = [];
+        if (wantedVersion && current !== wantedVersion)
+          messages.push(
+            'Khác phiên bản dữ liệu: link dùng ' +
+              wantedVersion +
+              ', ứng dụng đang dùng ' +
+              current +
+              '. Các mã dưới đây được xem theo bản hiện tại.',
+          );
+        if (missing.length)
+          messages.push('Không tìm thấy mã trong dữ liệu hiện tại: ' + missing.join(', ') + '.');
+        setShareWarning(messages.join(' '));
+        if (!messages.length) notify('Đã mở danh sách mã; phiên bản dữ liệu khớp.');
       })
       .catch(() => setToast('Chưa mở được danh sách chia sẻ.'));
   }, []);
@@ -421,7 +510,10 @@ export default function Workspace() {
             <span>Tra cứu mã HS Việt Nam</span>
           </div>
           <div className="top-actions">
-            <button className="help-toggle" onClick={() => setAssistantOpen((v) => !v)}>
+            <button
+              className="help-toggle"
+              onClick={() => (assistantOpen ? setAssistantOpen(false) : openHelp())}
+            >
               <MessageSquare size={16} />
               Hỗ trợ tìm mã
             </button>
@@ -432,8 +524,21 @@ export default function Workspace() {
             </button>
           </div>
         </header>
+        {storageError && (
+          <div className="storage-warning" role="alert">
+            Hồ sơ chưa lưu được trên thiết bị. Đừng đóng trang trước khi xuất bản sao.
+            <button onClick={() => workspace && download('ho-so-hs-backup.json', workspace)}>
+              Xuất bản sao
+            </button>
+          </div>
+        )}
         <main className={`workspace-grid ${assistantOpen ? '' : 'solo'}`}>
           <section className="search-area">
+            {shareWarning && (
+              <div className="shared-warning notice" role="status">
+                {shareWarning}
+              </div>
+            )}
             <div className="page-heading">
               <div>
                 <span className="eyebrow">DANH MỤC HÀNG HÓA VIỆT NAM</span>
@@ -494,6 +599,12 @@ export default function Workspace() {
                   <X size={12} />
                 </button>
               )}
+              {category && (
+                <button className="filter-chip" onClick={() => setCategory('')}>
+                  Ưu tiên: {categories.find((c) => c.id === category)?.label}
+                  <X size={12} />
+                </button>
+              )}
             </div>
             <div className={`filters ${showFilters ? '' : 'hidden'}`}>
               <div className="filter-title">
@@ -524,7 +635,12 @@ export default function Workspace() {
                     .filter((c) => c !== '77')
                     .map((c) => (
                       <option key={c} value={c}>
-                        Chương {c}
+                        Chương {c} (
+                        {num(
+                          (result?.available_facets || result?.facets)?.find((f) => f.chapter === c)
+                            ?.count || 0,
+                        )}
+                        )
                       </option>
                     ))}
                 </select>
@@ -590,7 +706,7 @@ export default function Workspace() {
                 <button className="text-button" onClick={() => setBrowse(true)}>
                   Duyệt toàn bộ danh mục <ChevronRight size={14} />
                 </button>
-                <button className="intro-help" onClick={() => setAssistantOpen(true)}>
+                <button className="intro-help" onClick={openHelp}>
                   Chưa biết tìm thế nào? Mô tả thêm bằng lời.
                 </button>
               </div>
@@ -686,7 +802,7 @@ export default function Workspace() {
               xác minh pháp lý từng dòng.
             </footer>
           </section>
-          <aside className={`assistant-panel ${assistantOpen ? '' : 'hidden'}`}>
+          <aside ref={assistantRef} className={`assistant-panel ${assistantOpen ? '' : 'hidden'}`}>
             <header>
               <span className="assistant-icon">
                 <MessageSquare size={19} />
@@ -778,7 +894,7 @@ export default function Workspace() {
                       {m.references?.length ? (
                         <div className="references">
                           {m.references.map((r, j) => (
-                            <button key={r.code} onClick={() => setDetail(r)}>
+                            <button key={r.code} onClick={() => openReference(r)}>
                               [{j + 1}] {r.code}
                               <ArrowUpRight size={12} />
                             </button>
@@ -801,6 +917,7 @@ export default function Workspace() {
                   }}
                 >
                   <textarea
+                    ref={chatRef}
                     aria-label="Mô tả hàng hóa"
                     placeholder="Mô tả hàng hóa hoặc bổ sung lời khai…"
                     value={chat}
@@ -821,13 +938,19 @@ export default function Workspace() {
                 <label className="field-label">
                   Tên sản phẩm
                   <input
+                    onFocus={beginEdit}
                     aria-label="Tên sản phẩm"
                     value={active?.name || ''}
                     onChange={(e) =>
                       workspace &&
                       active &&
                       setWorkspace(
-                        updateProduct(workspace, active.id, { name: e.target.value.slice(0, 80) }),
+                        updateProduct(
+                          workspace,
+                          active.id,
+                          { name: e.target.value.slice(0, 80) },
+                          editToken.current,
+                        ),
                       )
                     }
                   />
@@ -835,13 +958,19 @@ export default function Workspace() {
                 <label className="field-label profile-query">
                   Tên hàng dùng để tìm
                   <input
+                    onFocus={beginEdit}
                     aria-label="Tên hàng dùng để tìm"
                     value={active?.query || ''}
                     maxLength={200}
                     onChange={(e) => {
                       if (workspace && active) {
                         setWorkspace(
-                          updateProduct(workspace, active.id, { query: e.target.value }),
+                          updateProduct(
+                            workspace,
+                            active.id,
+                            { query: e.target.value },
+                            editToken.current,
+                          ),
                         );
                         setQ(e.target.value);
                       }
@@ -857,19 +986,37 @@ export default function Workspace() {
                         <label>
                           {factLabels[k] || k}
                           <input
+                            onFocus={beginEdit}
                             aria-label={factLabels[k] || k}
                             value={v}
                             onChange={(e) =>
                               workspace &&
                               setWorkspace(
-                                updateProduct(workspace, active.id, {
-                                  facts: { [k]: e.target.value.slice(0, 200) },
-                                }),
+                                updateProduct(
+                                  workspace,
+                                  active.id,
+                                  {
+                                    facts: { [k]: e.target.value.slice(0, 200) },
+                                  },
+                                  editToken.current,
+                                ),
                               )
                             }
                           />
                         </label>
                         <span>Bạn khai · có thể sửa</span>
+                        <button
+                          className="remove-fact"
+                          aria-label={`Xóa ${factLabels[k] || k}`}
+                          onClick={() =>
+                            workspace &&
+                            setWorkspace(
+                              updateProduct(workspace, active.id, { facts: { [k]: '' } }),
+                            )
+                          }
+                        >
+                          <X size={13} />
+                        </button>
                       </div>
                     ))
                 ) : (
@@ -881,6 +1028,7 @@ export default function Workspace() {
                 <label className="field-label profile-notes">
                   Thông tin bổ sung
                   <textarea
+                    onFocus={beginEdit}
                     aria-label="Thông tin bổ sung"
                     placeholder="Công dụng, vật liệu hoặc thông số bạn đã biết…"
                     maxLength={200}
@@ -890,7 +1038,12 @@ export default function Workspace() {
                       workspace &&
                       active &&
                       setWorkspace(
-                        updateProduct(workspace, active.id, { facts: { notes: e.target.value } }),
+                        updateProduct(
+                          workspace,
+                          active.id,
+                          { facts: { notes: e.target.value } },
+                          editToken.current,
+                        ),
                       )
                     }
                   />
@@ -935,8 +1088,8 @@ export default function Workspace() {
                 <div className="notice small">
                   <Info size={15} />
                   <span>
-                    Lời khai hỗ trợ xếp hạng trong hội thoại. Bộ lọc danh sách chỉ đổi khi bạn chọn
-                    trực tiếp.
+                    Lời khai hỗ trợ xếp hạng trong hội thoại. Bộ lọc chương/bộ dữ liệu được dùng cho
+                    cả danh sách và hội thoại.
                   </span>
                 </div>
               </div>
@@ -972,6 +1125,7 @@ export default function Workspace() {
       {compare && (
         <Dialog title="So sánh mã ứng viên" onClose={() => setCompare(false)}>
           <div className="detail-body">
+            {shareWarning && <div className="notice">{shareWarning}</div>}
             {selected.length < 2 ? (
               <div className="empty-state">
                 <GitCompareArrows size={30} />

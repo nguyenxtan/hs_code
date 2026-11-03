@@ -63,3 +63,21 @@ describe('search contracts', () => {
     expect(r.items.map((x) => x.code)).toEqual(['84431200']);
   });
 });
+it('recognizes code separators and never treats overlong numeric input as product text', () => {
+  expect(parseQuery('8471-30')).toEqual({ text: '847130', numeric: true });
+  expect(parseQuery('8471/30')).toEqual({ text: '847130', numeric: true });
+  expect(parseQuery('847130201').numeric).toBe(true);
+  expect(searchRecords(rows, { q: '847130201' }).total).toBe(0);
+});
+it('does not interpret a help-only query as browsing the catalogue', () => {
+  expect(searchRecords(rows, { q: 'tìm mã' }).total).toBe(0);
+});
+it('retains a product phrase when generic attributes also match unrelated goods', () => {
+  const records = [
+    row('39249020', 'Miếng bảo vệ đầu ngực, phễu vắt sữa bằng tay'),
+    row('96110000', 'Con dấu ngày; con dấu đóng thủ công và bộ in bằng tay'),
+  ];
+  expect(searchRecords(records, { q: 'con dấu bằng tay' }).items.map((r) => r.code)).toEqual([
+    '96110000',
+  ]);
+});

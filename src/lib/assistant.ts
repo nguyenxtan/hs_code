@@ -21,8 +21,20 @@ export function extractiveReply(
   };
 }
 export function safeGeneratedText(text: string, codes: string[]): boolean {
-  if (!text || text.length > 5000 || /\d\s*%/.test(text)) return false;
-  return [...text.matchAll(/\b\d{8}\b/g)].every((m) => codes.includes(m[0]));
+  if (!text || text.length > 5000 || /%|phần\s*trăm/i.test(text)) return false;
+  const matches = [
+    ...text.matchAll(/\b(?:\d{4}(?:[.\s/_-]?\d{2}){0,2}|\d{2}(?:[.\s/_-]\d{2}){1,3})\b/g),
+  ];
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i],
+      code = m[0].replace(/\D/g, '');
+    if (!codes.some((c) => c.startsWith(code))) return false;
+    const end = matches[i + 1]?.index ?? text.length;
+    const tail = text.slice(m.index! + m[0].length, end);
+    const citation = tail.match(/\[(\d+)\]/);
+    if (!citation || !codes[Number(citation[1]) - 1]?.startsWith(code)) return false;
+  }
+  return true;
 }
 export async function groundedReply(
   message: string,

@@ -20,6 +20,12 @@ def stable_json(value):
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
+def source_files(root, registry):
+    return [root/f['name'] for f in registry['sources']]
+
+def snapshot_identity(records, hashes):
+    return hashlib.sha256(stable_json({'sources':hashes,'records':records,'ruleset':RULESET}).encode('utf-8')).hexdigest()[:12]
+
 def fold(value):
     decomposed = unicodedata.normalize('NFD', value.casefold()).replace('đ', 'd')
     return re.sub(r'\s+', ' ', ''.join(c for c in decomposed if not unicodedata.combining(c))).strip()
@@ -114,13 +120,13 @@ def prepare(input_dir, output_dir):
     for f in registry['sources']:
         if not (root/f['name']).exists() or digest(root/f['name'])!=f['sha256']:
             raise ValueError('Pinned source missing or checksum differs: '+f['name'])
-    files=sorted(p for p in root.iterdir() if p.is_file() and p.name!='manifest.json')
+    files=source_files(root,registry)
     hashes={p.name:digest(p) for p in files}
     rows=json.loads((root/'hs_codes_2022_11414.json').read_text(encoding='utf-8'))
     with (root/'hs_codes_2022_11414.csv').open(encoding='utf-8-sig',newline='') as f:
         reader=csv.DictReader(f); csv_rows=list(reader); header=reader.fieldnames
     if csv_rows != rows or header != FIELDS: raise ValueError('JSON/CSV mismatch; preparation aborted')
-    workbooks=list(root.glob('*.xlsx'))
+    workbooks=[p for p in files if p.suffix=='.xlsx']
     chapters=[]
     if workbooks:
         sheets=read_xlsx(workbooks[0])
@@ -149,8 +155,9 @@ def prepare(input_dir, output_dir):
         'warnings':['Parent descriptions incomplete; no official hierarchy reconstructed.','EN reference scope unverified.','Tax strings retained; not applicable rates.','No utility taxonomy or semantic aliases inferred.'],
         'chapter98_missing_corresponding_code':sum(not r.get('ma_hs_tuong_ung') for r in chapters),
     }
-    identity=hashlib.sha256(stable_json(hashes).encode('utf-8')).hexdigest()[:12]
-    snapshot={'version':'vn-hs2022-'+identity+'-'+RULESET,'license':'CC-BY-SA-4.0; source rights must be respected','attribution':'HS Knowledge Base — github.com/ozvietnam/hs-code-api','source_date':'2026-11-03','context_complete':False,'records':records,'audit':audit}
+    identity=snapshot_identity(records,hashes)
+    records_hash=hashlib.sha256(stable_json(sorted(records,key=lambda r:r['code'])).encode('utf-8')).hexdigest()
+    snapshot={'version':'vn-hs2022-'+identity+'-'+RULESET,'records_sha256':records_hash,'license':'CC-BY-SA-4.0; source rights must be respected','attribution':'HS Knowledge Base — github.com/ozvietnam/hs-code-api','source_date':'2026-11-03','context_complete':False,'records':records,'audit':audit}
     outputs={'snapshot.json':snapshot,'audit.json':audit,'transform-diff.json':diff,'quarantine.json':quarantine,'reconciliation.json':{'json_csv_equal':True,'xlsx_json_equal':bool(workbooks),'main_rows':len(rows),'source_hashes':hashes}}
     out.mkdir(parents=True,exist_ok=True)
     for filename,obj in outputs.items(): (out/filename).write_text(stable_json(obj),encoding='utf-8')

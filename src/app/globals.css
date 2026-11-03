@@ -1936,3 +1936,92 @@ pre {
   line-height: 1.8;
   color: #405b7b;
 }
+.storage-warning {
+  margin: 18px auto 0;
+  max-width: 1200px;
+  padding: 13px 18px;
+  border: 1px solid #e6bb78;
+  background: #fff6e7;
+  color: #885621;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.storage-warning button {
+  margin-left: 12px;
+  text-decoration: underline;
+  font-weight: 600;
+}
+.shared-warning {
+  margin-bottom: 22px;
+}
+.fact {
+  position: relative;
+  padding-right: 25px;
+}
+.remove-fact {
+  position: absolute;
+  right: 0;
+  top: 21px;
+  color: #7890ad;
+  padding: 4px;
+}
+@media (max-width: 760px) {
+  .search-box input,
+  .chat-form textarea,
+  .profile-content input,
+  .profile-content textarea,
+  .filters select,
+  .utility-groups select,
+  .active-product select {
+    font-size: 16px !important;
+  }
+  .data-status {
+    font-size: 11px;
+  }
+  .data-caveat,
+  .results-footer,
+  .utility-groups > span,
+  .active-product,
+  .message-label,
+  .references button,
+  .chat-form > div span {
+    font-size: 12px;
+  }
+  .breadcrumb b {
+    font-size: 16px;
+  }
+  .data-status {
+    padding: 7px;
+  }
+  .top-actions {
+    gap: 5px;
+  }
+  .storage-warning {
+    margin: 12px;
+    font-size: 12px;
+  }
+  .results-footer {
+    line-height: 1.9;
+  }
+  .active-product select {
+    max-width: 270px;
+  }
+  .profile-content .field-label,
+  .fact label {
+    font-size: 12px;
+  }
+  .remove-fact {
+    min-width: 34px;
+    min-height: 34px;
+    top: 20px;
+  }
+}
+.storage-warning {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+.result-list.is-loading {
+  pointer-events: none;
+}

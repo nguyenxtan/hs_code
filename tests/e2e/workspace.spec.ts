@@ -32,6 +32,9 @@ test('conversation facts are corrected, undone and persisted on this browser', a
     await page.getByRole('button', { name: 'Gửi mô tả' }).click();
     await expect(page.locator('.thinking')).toHaveCount(0);
   }
+  await page.locator('.references button').first().click();
+  await expect(page.getByRole('dialog')).toContainText('Dòng nguồn');
+  await page.keyboard.press('Escape');
   await page.getByRole('button', { name: /^Hồ sơ / }).click();
   await expect(page.getByRole('textbox', { name: 'Cấp mực', exact: true })).toHaveValue(
     'khay mực rời',

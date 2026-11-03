@@ -24,6 +24,7 @@ export type Snapshot = {
   license: string;
   records: HSRecord[];
   audit: Record<string, unknown>;
+  records_sha256?: string;
 };
 export type SearchOptions = {
   q?: string;
@@ -38,6 +39,7 @@ export type SearchResult = {
   items: HSRecord[];
   total: number;
   facets: { chapter: string; count: number }[];
+  available_facets?: { chapter: string; count: number }[];
   numeric: boolean;
   version?: string;
   source_date?: string;
@@ -46,13 +48,15 @@ export type SearchResult = {
 export type Message = {
   role: 'user' | 'assistant';
   content: string;
-  references?: HSRecord[];
+  references?: CodeReference[];
   mode?: string;
 };
+export type CodeReference = { code: string; version: string };
 export type ProductRevision = { name: string; facts: Record<string, string>; query: string };
 export type Product = ProductRevision & {
   id: string;
   messages: Message[];
   history: ProductRevision[];
+  lastEditToken?: string;
 };
 export type Workspace = { version: 1; activeId: string; products: Product[] };
