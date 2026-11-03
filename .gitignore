@@ -10,5 +10,11 @@ __pycache__/
 .venv/
 data/raw/
 data/private/
+data/processed/
+data/reports/
+.cache/
+playwright-report/
+test-results/
+*.tsbuildinfo
 backups/
 *.log

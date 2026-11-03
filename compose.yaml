@@ -1,0 +1,18 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: hs_code
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hs_code_local}
+      POSTGRES_DB: hs_code
+    ports:
+      - "127.0.0.1:55439:5432"
+    volumes:
+      - hs_code_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hs_code -d hs_code"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+volumes:
+  hs_code_pg:

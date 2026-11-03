@@ -1,0 +1,43 @@
+{
+  "name": "hs-code-vietnam",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3100",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1 --port 3100",
+    "test": "vitest run",
+    "test:data": "python3 -m unittest discover -s tests -p 'test_*.py' -v",
+    "test:e2e": "playwright test",
+    "typecheck": "next typegen && tsc --noEmit",
+    "data:prepare": "python3 scripts/prepare_data.py --input data/raw/2026-11-03 --output data/processed/2026-11-03",
+    "data:import": "tsx scripts/import.ts",
+    "data:embed": "tsx scripts/embed.ts",
+    "format": "prettier --write src scripts tests"
+  },
+  "dependencies": {
+    "lucide-react": "^0.577.0",
+    "next": "16.4.4",
+    "pg": "8.23.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "^22.19.0",
+    "@types/pg": "^8.16.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "5.1.0"
+  },
+  "optionalDependencies": {
+    "@huggingface/transformers": "4.3.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

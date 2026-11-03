@@ -1,46 +1,59 @@
-# HS Code Việt Nam
+# HS Atlas — tra cứu mã HS Việt Nam
 
-Dự án mã nguồn mở hỗ trợ tra cứu HS, lọc hàng hóa và hội thoại RAG có dẫn nguồn.
+Ứng dụng mã nguồn mở để tìm, lọc, so sánh mã HS và khai báo sản phẩm qua hội thoại có nguồn tham khảo.
 
-**Trạng thái:** đã có phản biện thiết kế từ Claude Code và bản tổng hợp của coordinator; chưa có ứng dụng chạy được. Các lựa chọn kỹ thuật dưới đây là đề xuất cần kiểm chứng bằng dữ liệu và thử nghiệm người dùng.
+**Trạng thái:** local MVP đã có pipeline chuẩn hóa kỹ thuật, tra cứu/filter, 12 nhóm gợi ý, so sánh, hồ sơ trình duyệt và trợ lý truy xuất. Chưa phải công cụ tự động chốt mã hoặc VAT, chưa triển khai public production. Claude chỉ tham vấn/review; coordinator triển khai.
 
-## Trải nghiệm hướng đến
+## Chạy nhanh
 
-- Tìm bằng mã hoặc mô tả hàng hóa tiếng Việt/Anh, có hoặc không dấu.
-- Duyệt cây HS và nhóm hàng dễ hiểu; lọc theo thuộc tính có căn cứ.
-- Chuyển kết quả tìm kiếm sang chat, hoặc chuyển lời khai trong chat thành bộ lọc có thể sửa.
-- Khai báo sản phẩm dần qua nhiều lượt; lưu trạng thái, sửa lời khai và tiếp tục phiên trước.
-- Đề xuất mã ứng viên, giải thích khác biệt, dẫn nguồn và chỉ rõ dữ kiện còn thiếu.
-- Xuất bản dữ liệu có phiên bản, nguồn gốc và báo cáo chất lượng.
+Cần Node 22+, Python 3.9+. Tải bốn file nguồn theo [hướng dẫn dữ liệu](data/README.md) trước khi chạy chuẩn hóa.
 
-## Tài liệu
+```sh
+npm ci
+npm run data:prepare
+cp .env.example .env.local
+npm run dev
+```
 
-1. [Yêu cầu và tiêu chí nghiệm thu](docs/requirements.md)
-2. [Kiến trúc đề xuất và các phương án](docs/architecture.md)
-3. [Dữ liệu, làm sạch và phân nhóm](docs/data-strategy.md)
-4. [Hội thoại và trải nghiệm filter/RAG](docs/conversation-ux.md)
-5. [Lộ trình và đánh giá](docs/roadmap.md)
-6. [Nguồn và giấy phép dữ liệu](docs/data-sources.md)
-7. [Đề bài tham vấn Claude Code](docs/consultations/claude-brief.md)
-8. [Báo cáo độc lập của Claude Code](docs/consultations/claude-review.md)
-9. [Tổng hợp, điều chỉnh và đề xuất sau tham vấn](docs/consultations/synthesis.md)
-10. [Thiết kế VAT theo điều kiện và thời điểm](docs/vat-design.md)
-11. [Review làm sạch dữ liệu](docs/consultations/claude-cleaning-review.md)
-12. [Review thiết kế VAT](docs/consultations/claude-vat-review.md)
-13. [Tổng hợp review và phạm vi đợt 1 chờ duyệt](docs/consultations/review-status.md)
+Mở **http://127.0.0.1:3100**. Không cần API key để tra cứu hoặc dùng trợ lý trích xuất. PostgreSQL và embedding local là các tùy chọn trong [runbook](docs/runbook.md).
 
-Theo yêu cầu review trước khi thực hiện, hiện chưa có pipeline hay dữ liệu đã làm sạch. Chỉ raw đã được tải để kiểm tra read-only và được gitignore. Chưa có category tiện ích được gắn.
+## Có gì trong bản đầu?
 
-## Hướng triển khai ban đầu
+- 11.414 mã chính và 457 mã chương 98 từ workbook nguồn, tổng 11.871 bản ghi.
+- Tra mã chính xác/tiền tố có dấu chấm, tên Việt/Anh, tìm không dấu và fallback typo.
+- Lọc trực tiếp theo chương/bộ dữ liệu. 12 nhóm tiện ích còn ở bản đề xuất, chỉ ưu tiên thứ tự, không loại mã.
+- So sánh 2–4 mã; xem nguyên văn thuế, ghi chú, provenance và nguồn.
+- Khai báo dần, sửa/hoàn tác và giữ riêng từng sản phẩm; lưu trên thiết bị, xuất/xóa hồ sơ được.
+- Trợ lý trích xuất có references. Tùy chọn embedding multilingual local và mô hình Chat Completions qua cấu hình server; khi AI không dùng được vẫn có tìm kiếm thường.
+- Chia sẻ danh sách mã/snapshot không kèm lời khai hoặc lịch sử.
 
-Ứng dụng Next.js/TypeScript và PostgreSQL, thêm pgvector khi triển khai truy xuất ngữ nghĩa. Pipeline dữ liệu chạy offline, xuất snapshot có manifest và báo cáo chất lượng; worker online chỉ thêm khi có tác vụ cần. Tách adapter mô hình chat/embedding, giữ API key phía server. Docker Compose cho tự triển khai. Đây là lựa chọn khởi điểm, chưa phải kết quả benchmark hay quyết định đã được chủ dự án duyệt.
+## Chuẩn hóa dữ liệu
 
-MVP đề xuất đi theo hai bước: tra cứu/filter có căn cứ và so sánh mã trước; chat RAG dùng chung hồ sơ sau. Thuế thô được hiển thị tham khảo, chưa dùng lọc hoặc sắp xếp theo mức thuế. Xem bản tổng hợp để hiểu các giới hạn của báo cáo tham vấn.
+Raw bất biến; code giữ text. Mô tả chuẩn hóa lưu riêng và có diff. Đã đối soát JSON/CSV/XLSX mã chính, 11.871 dòng accepted, 0 quarantine, 531 dòng có biến đổi kỹ thuật. Xem [báo cáo](docs/data-audit.md). Đầu ra đầy đủ, model weights, vectors và backup nằm local/gitignored.
 
-## Đóng góp
+Mô tả cấp cha/chú giải còn thiếu. Tiếng Anh là tham khảo. Ô thuế trống không phải số 0; VAT raw không phải mức áp dụng. Chức năng xác định VAT theo điều kiện/thời gian mới ở mức [thiết kế](docs/vat-design.md), chưa bật.
 
-Xem [CONTRIBUTING.md](CONTRIBUTING.md). Trước khi triển khai tính năng, thống nhất thiết kế và tiêu chí đánh giá. Không đưa hội thoại thật, API key hoặc dữ liệu chưa rõ quyền sử dụng vào Git.
+## Kiểm tra và vận hành
 
-## Giấy phép
+```sh
+npm run test:data
+npm test
+npm run typecheck
+npm run build
+npm run test:e2e
+```
 
-Mã và tài liệu do dự án tạo: [MIT](LICENSE). Dữ liệu bên ngoài có giấy phép riêng; giấy phép MIT không cấp lại quyền với dữ liệu nguồn. Xem [nguồn dữ liệu](docs/data-sources.md).
+Browser tests cần dữ liệu local và Chromium. [Runbook](docs/runbook.md) có thiết lập PostgreSQL, embedding, provider chat, backup/restore và các việc còn cần cho public production.
+
+## Thiết kế và các lượt tham vấn
+
+- [Yêu cầu](docs/requirements.md), [kiến trúc](docs/architecture.md), [hội thoại UX](docs/conversation-ux.md).
+- [Chiến lược dữ liệu](docs/data-strategy.md), [nguồn/giấy phép](docs/data-sources.md), [VAT](docs/vat-design.md).
+- Claude: [kiến trúc](docs/consultations/claude-review.md), [làm sạch](docs/consultations/claude-cleaning-review.md), [VAT](docs/consultations/claude-vat-review.md), [UX](docs/consultations/claude-ux-review.md).
+- [Tổng hợp review](docs/consultations/review-status.md), [kế hoạch thực hiện](docs/superpowers/plans/2026-11-03-hs-code-mvp.md), [tiến độ và quyết định](docs/implementation-progress.md).
+
+Các báo cáo tư vấn là tài liệu theo thời điểm, có giả định chưa xác minh; xem runbook và progress để biết trạng thái code thực tế.
+
+## Giấy phép và đóng góp
+
+Mã/tài liệu dự án: [MIT](LICENSE). Dữ liệu ngoài có giấy phép riêng: **HS Knowledge Base — github.com/ozvietnam/hs-code-api**, CC BY-SA 4.0 theo nguồn. Không phát hành lại dataset hoặc nội dung WCO trong repo. [Đóng góp](CONTRIBUTING.md).

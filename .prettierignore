@@ -1,0 +1,7 @@
+node_modules/
+.next/
+.cache/
+data/raw/
+data/processed/
+backups/
+package-lock.json

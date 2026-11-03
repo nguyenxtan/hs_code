@@ -1,0 +1,11 @@
+{
+  "snapshot_date": "2026-11-03",
+  "attribution": "HS Knowledge Base — github.com/ozvietnam/hs-code-api",
+  "data_license": "CC-BY-SA-4.0",
+  "sources": [
+    {"name":"hs_codes_2022_11414.json","drive_id":"15gjIKxqpbytRGSdsTLhFSfsizJe8vpoD","sha256":"742067cfabb1f02fdb5b5e8b352a067ee1032d448b863cdceb00d73f1c5ba09d"},
+    {"name":"hs_codes_2022_11414.csv","drive_id":"1Jwy8ueCuvFe6z3dQE5h0gQOPknCC0vpf","sha256":"8aa1190ed4a46e5b97b0cc7d2d0cd5a0f99fa145568645317ee4e16cedad94b7"},
+    {"name":"Vietnam_HS_2022_11414_codes_2026-11-03.xlsx","drive_id":"1BrT27dzdxLZChn8rQLoJibFbtribUbgH","sha256":"4ad7bc1dee931c05145121744a68769934090aa58356a3e9c4e6c22c0d28e99a"},
+    {"name":"import_postgres.sql","drive_id":"1c5y-vRM174CoXMsOxIu0UNRk_3ijD6W8","sha256":"c96a1ea3c6fc3d4656d19ef1c301b17c067902a99ce27d507257328b8a2fd07e"}
+  ]
+}

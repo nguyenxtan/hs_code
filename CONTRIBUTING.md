@@ -1,6 +1,6 @@
 # Đóng góp
 
-Hiện tại dự án đang thiết kế. Mời góp ý bằng issue về tình huống sử dụng, chất lượng dữ liệu, taxonomy và tiêu chí đánh giá.
+Dự án có bản local MVP. Mời góp ý bằng issue/PR về tình huống sử dụng, chất lượng dữ liệu, taxonomy và tiêu chí đánh giá. Chạy các kiểm tra trong README cho phần thay đổi; dữ liệu thật và hồ sơ riêng không được commit.
 
 - Mỗi thay đổi dữ liệu cần nguồn, phiên bản, quyền sử dụng và báo cáo diff.
 - Không gửi lời khai hàng hóa thật hoặc thông tin người dùng nếu chưa được phép.
