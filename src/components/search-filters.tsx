@@ -1,182 +1,223 @@
 'use client';
-
-import { useState } from 'react';
-import { ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { ChevronDown, Check, Search } from 'lucide-react';
+import type { HSRecord } from '@/lib/types';
 import { categories } from '@/lib/categories';
+import Dialog from '@/components/dialog';
 
-type Selection = { chapter: string; dataset: string; category: string };
-type Props = Selection & {
-  facets: { chapter: string; count: number }[];
-  loading: boolean;
-  onChange: (selection: Selection) => void;
-};
-
-export default function SearchFilters({
+type Facet = { chapter: string; count: number };
+export function ChapterChips({
   chapter,
-  dataset,
-  category,
   facets,
+  samples,
+  query,
   loading,
   onChange,
-}: Props) {
-  const [open, setOpen] = useState(false);
-  const selection = { chapter, dataset, category };
-  const filterCount = Number(!!chapter) + Number(dataset !== 'all');
-  const hasSelection = filterCount > 0 || !!category;
-  const priority = categories.find((c) => c.id === category);
-  const chapters = facets.filter((f) => f.count > 0 && (dataset !== 'main' || f.chapter !== '98'));
-  if (chapter && !chapters.some((f) => f.chapter === chapter)) chapters.push({ chapter, count: 0 });
-  chapters.sort((a, b) => a.chapter.localeCompare(b.chapter));
-  const reset = () => onChange({ chapter: '', dataset: 'all', category: '' });
-
-  function changeDataset(next: string) {
-    onChange({
-      ...selection,
-      dataset: next,
-      chapter: next === 'chapter98' || (next === 'main' && chapter === '98') ? '' : chapter,
-    });
+}: {
+  chapter: string;
+  facets: Facet[];
+  samples: HSRecord[];
+  query: string;
+  loading: boolean;
+  onChange: (chapter: string) => void;
+}) {
+  const [mobile, setMobile] = useState(false),
+    [picker, setPicker] = useState(false),
+    [filter, setFilter] = useState('');
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const m = matchMedia('(max-width:760px)');
+    const update = () => setMobile(m.matches);
+    update();
+    m.addEventListener('change', update);
+    return () => m.removeEventListener('change', update);
+  }, []);
+  const available = facets.filter((f) => f.count > 0);
+  if (chapter && !available.some((f) => f.chapter === chapter))
+    available.push({ chapter, count: 0 });
+  available.sort((a, b) =>
+    query.trim()
+      ? b.count - a.count || a.chapter.localeCompare(b.chapter)
+      : a.chapter.localeCompare(b.chapter),
+  );
+  const total = facets.reduce((n, f) => n + f.count, 0);
+  const limit = mobile ? 3 : 5;
+  const visible = available.slice(0, limit);
+  if (chapter && !visible.some((f) => f.chapter === chapter)) {
+    if (visible.length === limit) visible.pop();
+    visible.push(available.find((f) => f.chapter === chapter)!);
   }
-
+  const rest = available.length - visible.length;
+  const filtered = available.filter((f) => f.chapter.includes(filter.trim()));
+  function choose(c: string) {
+    onChange(c === chapter ? '' : c);
+    setPicker(false);
+    setFilter('');
+  }
   return (
-    <div className="search-filters">
-      <div className="filter-toolbar">
-        <button
-          className={`filter-trigger ${open ? 'selected' : ''}`}
-          aria-label="Bộ lọc"
-          aria-describedby="active-filter-count"
-          aria-expanded={open}
-          aria-controls="search-filter-panel"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <SlidersHorizontal size={16} />
-          Bộ lọc
-          {filterCount > 0 && <span className="filter-count">{filterCount}</span>}
-          <ChevronDown size={14} className={open ? 'turned' : ''} />
+    <>
+      <div
+        className={`chapter-chips ${loading ? 'refreshing' : ''}`}
+        role="group"
+        aria-label="Lọc theo chương"
+        aria-busy={loading}
+      >
+        <span className="chapter-label">Chương</span>
+        <button aria-pressed={!chapter} onClick={() => onChange('')}>
+          Tất cả <span>{total.toLocaleString('vi-VN')}</span>
         </button>
-        <span id="active-filter-count" className="sr-only">
-          {filterCount} bộ lọc đang áp dụng{priority ? `; ưu tiên ${priority.label}` : ''}.
-        </span>
-        {dataset !== 'all' && (
+        {visible.map((f) => (
           <button
-            className="filter-chip"
-            aria-label={dataset === 'main' ? 'Bỏ lọc danh mục chính' : 'Bỏ lọc chương 98 bổ sung'}
-            onClick={() => changeDataset('all')}
+            key={f.chapter}
+            aria-label={`Chương ${f.chapter}, ${f.count} kết quả`}
+            aria-pressed={chapter === f.chapter}
+            onClick={() => choose(f.chapter)}
           >
-            {dataset === 'main' ? 'Danh mục chính' : 'Chương 98 bổ sung'}
-            <X size={13} />
+            Ch. {f.chapter}
+            {f.chapter === '98' && <span className="chapter98-hint"> · bổ sung VN</span>}
+            <span>{f.count.toLocaleString('vi-VN')}</span>
           </button>
-        )}
-        {chapter && (
+        ))}
+        {rest > 0 && (
           <button
-            className="filter-chip"
-            aria-label={`Bỏ lọc chương ${chapter}`}
-            onClick={() => onChange({ ...selection, chapter: '' })}
+            className="more-chapters"
+            aria-label={`Xem thêm ${rest} chương`}
+            onClick={() => {
+              setFilter('');
+              setPicker(true);
+            }}
           >
-            Chương {chapter}
-            <X size={13} />
-          </button>
-        )}
-        {priority && (
-          <button
-            className="filter-chip priority-chip"
-            aria-label={`Bỏ ưu tiên ${priority.label}`}
-            onClick={() => onChange({ ...selection, category: '' })}
-          >
-            Ưu tiên: {priority.label}
-            <X size={13} />
-          </button>
-        )}
-        {hasSelection && (
-          <button
-            className="filter-reset"
-            aria-label="Xóa tất cả bộ lọc và ưu tiên"
-            onClick={reset}
-          >
-            Xóa tất cả
+            + {rest} chương
+            <ChevronDown size={13} />
           </button>
         )}
       </div>
-      <section
-        id="search-filter-panel"
-        className="filter-panel"
-        hidden={!open}
-        aria-label="Tùy chọn tra cứu"
-      >
-        <div className="filter-panel-heading">
-          <h2>Phạm vi tra cứu</h2>
-          <span>Tự cập nhật khi chọn</span>
-        </div>
-        <div className="filter-fields">
-          <label className="filter-field">
-            <span>Bộ mã</span>
-            <select
-              aria-label="Bộ dữ liệu"
-              value={dataset}
-              onChange={(e) => changeDataset(e.target.value)}
-            >
-              <option value="all">Tất cả mã HS</option>
-              <option value="main">Danh mục chính · HS 2022</option>
-              <option value="chapter98">Chương 98 bổ sung</option>
-            </select>
-          </label>
-          <label className="filter-field">
-            <span>Chương</span>
-            <select
-              aria-label="Chương"
-              aria-describedby="chapter-filter-hint"
-              disabled={dataset === 'chapter98'}
-              aria-busy={loading}
-              value={dataset === 'chapter98' ? '98' : chapter}
-              onChange={(e) => onChange({ ...selection, chapter: e.target.value })}
-            >
-              {dataset === 'chapter98' ? (
-                <option value="98">Chương 98</option>
-              ) : (
-                <>
-                  <option value="">Tất cả chương</option>
-                  {chapters.map((f) => (
-                    <option key={f.chapter} value={f.chapter}>
-                      Chương {f.chapter} · {f.count.toLocaleString('vi-VN')} mã
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
-          </label>
-        </div>
-        <p id="chapter-filter-hint" className="filter-hint" aria-live="polite">
-          {loading
-            ? 'Đang cập nhật số mã…'
-            : dataset === 'chapter98'
-              ? 'Bộ mã này chỉ gồm chương 98.'
-              : 'Chỉ hiện các chương có mã khớp với tìm kiếm của bạn.'}
-        </p>
-        <details className="filter-priority">
-          <summary>
-            <span>Ưu tiên kết quả</span>
-            {priority && <span className="priority-value">{priority.label}</span>}
-            <ChevronDown size={15} />
-          </summary>
-          <div className="priority-content">
-            <label className="filter-field">
-              <span>Nhóm hàng gợi ý</span>
-              <select
-                aria-label="Ưu tiên nhóm gợi ý"
-                value={category}
-                onChange={(e) => onChange({ ...selection, category: e.target.value })}
-              >
-                <option value="">Không ưu tiên nhóm</option>
-                {categories.map((c) => (
-                  <option value={c.id} key={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p>Đưa nhóm đã chọn lên trước, vẫn giữ kết quả ở các nhóm khác.</p>
+      {picker && (
+        <Dialog title="Chọn chương" className="picker-dialog" onClose={() => setPicker(false)}>
+          <div className="picker-search">
+            <Search size={17} />
+            <input
+              ref={input}
+              autoFocus
+              aria-label="Gõ số chương"
+              placeholder="Gõ số chương…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value.replace(/\D/g, '').slice(0, 2))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && filtered.length) {
+                  e.preventDefault();
+                  choose(filtered[0].chapter);
+                }
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  document.querySelector<HTMLButtonElement>('.chapter-option')?.focus();
+                }
+              }}
+            />
           </div>
-        </details>
-      </section>
-    </div>
+          <div
+            className="chapter-options"
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const buttons = Array.from(
+                  e.currentTarget.querySelectorAll<HTMLButtonElement>('button'),
+                );
+                const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
+                buttons[
+                  Math.max(0, Math.min(buttons.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))
+                ]?.focus();
+              }
+            }}
+          >
+            {filtered.map((f) => {
+              const sample = samples.find((r) => r.chapter === f.chapter);
+              return (
+                <button
+                  key={f.chapter}
+                  className="chapter-option"
+                  aria-label={`Chương ${f.chapter}${f.chapter === '98' ? ', bổ sung VN' : ''}, ${f.count} kết quả`}
+                  aria-pressed={f.chapter === chapter}
+                  onClick={() => choose(f.chapter)}
+                >
+                  <span>
+                    <b>
+                      Chương {f.chapter}
+                      {f.chapter === '98' ? ' · bổ sung VN' : ''}
+                    </b>
+                    <span>{f.count.toLocaleString('vi-VN')} mã</span>
+                  </span>
+                  {sample && <small>vd: {sample.description.replace(/^(?:-\s*)+/, '')}</small>}
+                </button>
+              );
+            })}
+            {!filtered.length && (
+              <p className="picker-empty">Không có chương phù hợp trong kết quả hiện tại.</p>
+            )}
+          </div>
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+export function RankLens({
+  category,
+  onChange,
+}: {
+  category: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = categories.find((c) => c.id === category);
+  return (
+    <>
+      <button
+        className="rank-trigger"
+        aria-label={`Xếp trước: ${selected?.label || 'Mặc định'}`}
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+      >
+        <span>
+          Xếp trước<span className="rank-value">: {selected?.label || 'Mặc định'}</span>
+        </span>
+        <ChevronDown size={14} />
+      </button>
+      {open && (
+        <Dialog
+          title="Đưa nhóm này lên trước"
+          className="picker-dialog"
+          onClose={() => setOpen(false)}
+        >
+          <p className="picker-note">
+            Chỉ đổi thứ tự, không ẩn mã nào. Nhóm là gợi ý tiện dụng, chưa phải phân loại chính
+            thức.
+          </p>
+          <fieldset className="rank-options">
+            <legend className="sr-only">Nhóm ưu tiên</legend>
+            {[{ id: '', label: 'Mặc định (độ khớp)' }, ...categories].map((c) => (
+              <label key={c.id}>
+                <input
+                  type="radio"
+                  name="ranking"
+                  value={c.id}
+                  checked={c.id === category}
+                  onChange={() => {
+                    onChange(c.id);
+                  }}
+                />
+                {c.label}
+                {c.id === category && <Check size={15} />}
+              </label>
+            ))}
+          </fieldset>
+          <div className="picker-actions">
+            <button className="primary-button" onClick={() => setOpen(false)}>
+              Xong
+            </button>
+          </div>
+        </Dialog>
+      )}
+    </>
   );
 }

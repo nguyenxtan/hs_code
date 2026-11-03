@@ -68,12 +68,12 @@ test('mobile help is brought into view, typing is undoable as one edit, dialog f
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.getByRole('button', { name: 'Hỗ trợ tìm mã', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Mô tả hàng hóa' })).toBeInViewport();
-  await page.getByRole('button', { name: /^Hồ sơ / }).click();
+  await page.getByRole('button', { name: 'Sửa hồ sơ', exact: true }).click();
   const name = page.getByRole('textbox', { name: 'Tên sản phẩm', exact: true });
   await name.fill('Một tên sản phẩm dài hơn ba mươi ký tự để thử hoàn tác');
   await name.blur();
   await page.getByRole('button', { name: 'Hoàn tác thay đổi hồ sơ' }).click();
-  await expect(name).toHaveValue('Sản phẩm mới');
+  await expect(name).toHaveValue('01012100');
 });
 test('shared links identify missing codes and mismatched dataset versions', async ({ page }) => {
   await page.goto('/?codes=99999999&snapshot=an-older-snapshot');

@@ -5,8 +5,8 @@ test('search, filter, compare and share without product facts', async ({ page })
   await expect(page.locator('.assistant-panel')).not.toBeVisible();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('01.01');
   await expect(page.locator('.code-link').first()).toHaveText(/0101\.21\.00/);
-  await page.getByRole('button', { name: 'So sánh 01012100', exact: true }).click();
-  await page.getByRole('button', { name: 'So sánh 01012900', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'So sánh 01012100', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'So sánh 01012900', exact: true }).check();
   await page.getByRole('button', { name: 'So sánh mã', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('VAT trong nguồn');
   await page.getByRole('button', { name: 'Chia sẻ danh sách mã' }).click();
@@ -16,10 +16,12 @@ test('search, filter, compare and share without product facts', async ({ page })
   expect(link).not.toContain('q=');
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Bộ lọc', exact: true }).click();
-  await page.getByRole('combobox', { name: 'Bộ dữ liệu' }).selectOption('chapter98');
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('');
-  await expect(page.locator('.dataset-tag').first()).toHaveText('CHƯƠNG 98');
+  await page.getByRole('button', { name: 'Duyệt theo chương' }).click();
+  await page.getByRole('button', { name: /^Xem thêm / }).click();
+  await page.getByRole('textbox', { name: 'Gõ số chương' }).fill('98');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.dataset-tag').first()).toHaveText('Bổ sung VN');
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: '.cache/desktop.png', fullPage: false });
 });
@@ -33,9 +35,9 @@ test('conversation facts are corrected, undone and persisted on this browser', a
     await expect(page.locator('.thinking')).toHaveCount(0);
   }
   await page.locator('.references button').first().click();
-  await expect(page.getByRole('dialog')).toContainText('Dòng nguồn');
+  await expect(page.getByRole('dialog', { name: /^Mã / })).toContainText('Dòng nguồn');
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: /^Hồ sơ / }).click();
+  await page.getByRole('button', { name: 'Sửa hồ sơ', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Cấp mực', exact: true })).toHaveValue(
     'khay mực rời',
   );
@@ -47,7 +49,9 @@ test('conversation facts are corrected, undone and persisted on this browser', a
     .getByRole('textbox', { name: 'Thông tin bổ sung' })
     .fill('Dùng đóng dấu lên bao bì giấy');
   await page.reload();
-  await page.getByRole('button', { name: /^Hồ sơ / }).click();
+  await expect(page.locator('.assistant-panel')).not.toBeVisible();
+  await page.getByRole('button', { name: 'Hỗ trợ tìm mã', exact: true }).click();
+  await page.getByRole('button', { name: 'Sửa hồ sơ', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Cấp mực', exact: true })).toHaveValue(
     'tự có mực',
   );

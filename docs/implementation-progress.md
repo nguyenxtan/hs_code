@@ -42,3 +42,9 @@ Plan: docs/superpowers/plans/2026-11-03-hs-code-mvp.md
 - Re-preparation byte comparison passed; all four pinned raw checksums matched; index has 11,871 unique codes with 384-d vectors matching snapshot `vn-hs2022-89808434c391-technical-v1`. Reimport returned 11,871 without altering snapshot data.
 - Fresh release backup restored to a separate temporary database: active version and 11,871 records matched; temporary database removed after verification. Backup remains ignored at `backups/hs_code-release.dump`.
 - Live production smoke: `con dau` and `con dấu bằng tay` return 96110000 first; random `xqzvw` returns no candidates.
+
+## UI/UX workbench refactor — following owner feedback
+
+- Source design: Claude advisory `docs/consultations/claude-filter-ux-review.md`, expanded full UI/UX review. Implementation and review-fix evidence: `docs/superpowers/plans/2026-11-03-lookup-workbench.md`.
+- Replaced filter form with chapter choices beside results and separate rank-only “Xếp trước”; removed the redundant dataset UI. Dense rows, persistent sticky search, full-screen mobile assistant, query-aware initial profile, detail navigation and compare. Saved chats remain available without blocking lookup on load.
+- Latest verification: 29 unit + 6 data + 21 browser = 56 passing tests; typecheck/build passed. Desktop shows 8 full rows and mobile 3 for “máy in”, with no horizontal overflow. Source/embeddings/legal-tax behavior unchanged.

@@ -38,7 +38,7 @@ Quota đăng nhập Codex không được dùng thay project API key. Theo [Open
 
 ## Phiên, chia sẻ và quyền riêng tư
 
-Hồ sơ/chat/facts/revisions lưu trong localStorage của origin. References chỉ giữ code/version, không lặp raw trong từng tin. Khi mở reference, app đọc đúng version nếu còn trong database; file mode chỉ có thể đọc snapshot hiện tại và báo rõ khi bản cũ không còn. Không đồng bộ xuyên thiết bị; xóa dữ liệu trình duyệt sẽ mất. Lưu thất bại có cảnh báo cố định kèm export. Nút xuất hồ sơ ghi rõ có lời khai.
+Hồ sơ/chat/facts/revisions lưu trong localStorage của origin. References chỉ giữ code/version, không lặp raw trong từng tin. Khi mở reference, app đọc đúng version nếu còn trong database; file mode chỉ có thể đọc snapshot hiện tại và báo rõ khi bản cũ không còn. Không đồng bộ xuyên thiết bị; xóa dữ liệu trình duyệt sẽ mất. Hồ sơ được khôi phục nhưng trợ lý không tự mở khi tải lại; người dùng mở “Hỗ trợ tìm mã” để tiếp tục. Phạm vi UI hiện chọn theo chương (gồm chương 98), còn dataset vẫn được API hỗ trợ. Lưu thất bại có cảnh báo cố định kèm export. Nút xuất hồ sơ ghi rõ có lời khai.
 
 Link chia sẻ chỉ có code và snapshot ID, không có truy vấn/facts/chat. Người nhận cần app có dữ liệu; bản đầu cảnh báo đối chiếu snapshot nhưng chưa phục hồi tự động snapshot lịch sử. File export mã không kèm lời khai. Không gửi truy vấn hay feedback tới dịch vụ thu thập thống kê.
 

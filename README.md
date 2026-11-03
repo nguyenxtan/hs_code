@@ -21,8 +21,9 @@ Mở **http://127.0.0.1:3100**. Không cần API key để tra cứu hoặc dùn
 
 - 11.414 mã chính và 457 mã chương 98 từ workbook nguồn, tổng 11.871 bản ghi.
 - Tra mã chính xác/tiền tố có dấu chấm, tên Việt/Anh, tìm không dấu và fallback typo.
-- Lọc trực tiếp theo chương/bộ dữ liệu. 12 nhóm tiện ích còn ở bản đề xuất, chỉ ưu tiên thứ tự, không loại mã.
-- So sánh 2–4 mã; xem nguyên văn thuế, ghi chú, provenance và nguồn.
+- Lọc theo chương ngay cạnh kết quả; chương 98 có nhãn bổ sung VN. 12 nhóm tiện ích còn ở bản đề xuất, chỉ ưu tiên thứ tự, không loại mã.
+- Giao diện đổi theo trạng thái: trang mở đầu gọn, thanh tìm kiếm sticky, danh sách kết quả dạng hàng; lọc chương và “Xếp trước” riêng biệt.
+- So sánh 2–4 mã; xem nguyên văn thuế, ghi chú, provenance và nguồn; chuyển mã trước/sau ngay trong chi tiết.
 - Khai báo dần, sửa/hoàn tác và giữ riêng từng sản phẩm; lưu trên thiết bị, xuất/xóa hồ sơ được.
 - Trợ lý trích xuất có references. Tùy chọn embedding multilingual local và mô hình Chat Completions qua cấu hình server; khi AI không dùng được vẫn có tìm kiếm thường.
 - Chia sẻ danh sách mã/snapshot không kèm lời khai hoặc lịch sử.
@@ -51,6 +52,7 @@ Browser tests cần dữ liệu local và Chromium. [Runbook](docs/runbook.md) c
 - [Chiến lược dữ liệu](docs/data-strategy.md), [nguồn/giấy phép](docs/data-sources.md), [VAT](docs/vat-design.md).
 - Claude: [kiến trúc](docs/consultations/claude-review.md), [làm sạch](docs/consultations/claude-cleaning-review.md), [VAT](docs/consultations/claude-vat-review.md), [UX](docs/consultations/claude-ux-review.md).
 - [Tổng hợp review](docs/consultations/review-status.md), [kế hoạch thực hiện](docs/superpowers/plans/2026-11-03-hs-code-mvp.md), [tiến độ và quyết định](docs/implementation-progress.md).
+- [Review UI/UX tổng thể của Claude](docs/consultations/claude-filter-ux-review.md), [kế hoạch và kết quả refactor](docs/superpowers/plans/2026-11-03-lookup-workbench.md).
 - [Review code/UI của Claude](docs/consultations/claude-implementation-review.md) và [xử lý phát hiện](docs/consultations/implementation-review-response.md).
 
 Các báo cáo tư vấn là tài liệu theo thời điểm, có giả định chưa xác minh; xem runbook và progress để biết trạng thái code thực tế.

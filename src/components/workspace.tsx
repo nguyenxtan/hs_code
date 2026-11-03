@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Search,
   Layers3,
@@ -10,14 +10,14 @@ import {
   Undo2,
   X,
   GitCompareArrows,
-  Database,
-  ChevronRight,
+  ChevronDown,
+  ArrowLeft,
+  ArrowRight,
   BookOpen,
   Download,
   Share2,
   Info,
   Trash2,
-  Check,
   MessageSquare,
 } from 'lucide-react';
 import type {
@@ -36,7 +36,9 @@ import {
   restoreWorkspace,
   serializeWorkspace,
 } from '@/lib/session';
-import SearchFilters from '@/components/search-filters';
+import { ChapterChips, RankLens } from '@/components/search-filters';
+import Dialog from '@/components/dialog';
+import AssistantPanel from '@/components/assistant-panel';
 import { hasSearchIntent } from '@/lib/search';
 
 const STORAGE = 'hs-atlas-workspace-v1';
@@ -54,47 +56,58 @@ function sourceURL(r: HSRecord) {
   const url = r.raw.source_url || r.raw.nguon || '';
   return /^https:\/\//.test(url) ? url : 'https://github.com/ozvietnam/hs-code-api';
 }
-function Dialog({
-  title,
+function RecordDetails({
+  record: r,
   onClose,
-  children,
+  selected,
+  onToggle,
+  previous,
+  next,
 }: {
-  title: string;
+  record: HSRecord;
   onClose: () => void;
-  children: ReactNode;
+  selected: boolean;
+  onToggle: () => void;
+  previous?: () => void;
+  next?: () => void;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    const dialog = ref.current;
-    dialog?.showModal();
-    return () => {
-      dialog?.close();
-      if (opener?.isConnected) opener.focus({ preventScroll: true });
-    };
-  }, []);
   return (
-    <dialog
-      ref={ref}
-      className="dialog"
-      onCancel={onClose}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+    <Dialog
+      title={`Mã ${displayCode(r.code)}`}
+      onClose={onClose}
+      onKeyDown={(e) => {
+        if (/INPUT|TEXTAREA|SELECT/.test((e.target as HTMLElement).tagName)) return;
+        if (e.key === 'ArrowLeft' && previous) {
+          e.preventDefault();
+          previous();
+        }
+        if (e.key === 'ArrowRight' && next) {
+          e.preventDefault();
+          next();
+        }
       }}
     >
-      <header>
-        <h2>{title}</h2>
-        <button className="icon-button" aria-label="Đóng" onClick={onClose}>
-          <X size={20} />
-        </button>
-      </header>
-      {children}
-    </dialog>
-  );
-}
-function RecordDetails({ record: r, onClose }: { record: HSRecord; onClose: () => void }) {
-  return (
-    <Dialog title={`Mã ${displayCode(r.code)}`} onClose={onClose}>
+      <div className="detail-navigation">
+        <label className="compare-toggle">
+          <input
+            type="checkbox"
+            aria-label="Thêm vào so sánh"
+            checked={selected}
+            onChange={onToggle}
+          />
+          Thêm vào so sánh
+        </label>
+        <div>
+          <button aria-label="Mã trước" disabled={!previous} onClick={previous}>
+            <ArrowLeft size={15} />
+            Mã trước
+          </button>
+          <button aria-label="Mã sau" disabled={!next} onClick={next}>
+            Mã sau
+            <ArrowRight size={15} />
+          </button>
+        </div>
+      </div>
       <div className="detail-body">
         <span className="eyebrow">
           {r.dataset === 'chapter98' ? 'CHƯƠNG 98 BỔ SUNG' : 'DANH MỤC HS 2022'} · NGUỒN THAM KHẢO
@@ -174,8 +187,8 @@ export default function Workspace() {
   const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
   const [q, setQ] = useState(''),
     [chapter, setChapter] = useState(''),
-    [dataset, setDataset] = useState('all'),
     [category, setCategory] = useState('');
+  const dataset = 'all';
   const [result, setResult] = useState<SearchResult | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState('');
@@ -203,9 +216,7 @@ export default function Workspace() {
     [browse, setBrowse] = useState(false);
   const [storageError, setStorageError] = useState(false),
     [shareWarning, setShareWarning] = useState('');
-  const helpRequested = useRef(false),
-    assistantRef = useRef<HTMLElement>(null),
-    chatRef = useRef<HTMLTextAreaElement>(null),
+  const chatRef = useRef<HTMLTextAreaElement>(null),
     editToken = useRef('');
   const searchRef = useRef<HTMLInputElement>(null),
     messagesRef = useRef<HTMLDivElement>(null);
@@ -213,12 +224,12 @@ export default function Workspace() {
     workspace?.products.find((p) => p.id === workspace.activeId) || workspace?.products[0];
 
   useEffect(() => {
+    if (window.innerWidth > 760) searchRef.current?.focus({ preventScroll: true });
     try {
       const raw = localStorage.getItem(STORAGE);
       const data = raw ? JSON.parse(raw) : null;
       const saved = restoreWorkspace(data) || createWorkspace();
       setWorkspace(saved);
-      setAssistantOpen(saved.products.some((p) => p.messages.length > 0));
     } catch {
       setWorkspace(createWorkspace());
       setToast('Không đọc được hồ sơ cũ. Đang dùng hồ sơ mới.');
@@ -289,18 +300,12 @@ export default function Workspace() {
   useEffect(() => {
     messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' });
   }, [active?.messages.length, sending]);
-  useEffect(() => {
-    if (!assistantOpen || !helpRequested.current) return;
-    const id = requestAnimationFrame(() => {
-      if (window.innerWidth <= 760)
-        assistantRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' });
-      chatRef.current?.focus({ preventScroll: true });
-      helpRequested.current = false;
-    });
-    return () => cancelAnimationFrame(id);
-  }, [assistantOpen]);
   function openHelp() {
-    helpRequested.current = true;
+    if (workspace && active && !active.query.trim() && !active.messages.length && q.trim()) {
+      setWorkspace(
+        updateProduct(workspace, active.id, { query: q.trim(), name: q.trim().slice(0, 80) }),
+      );
+    }
     setTab('chat');
     setAssistantOpen(true);
   }
@@ -463,7 +468,10 @@ export default function Workspace() {
     typeof window === 'undefined'
       ? ''
       : `${window.location.origin}/?codes=${selected.map((r) => r.code).join(',')}&snapshot=${encodeURIComponent(status?.version || '')}`;
-  const showResults = !!(q.trim() || chapter || dataset !== 'all' || category || browse);
+  const showResults = !!(q.trim() || chapter || category || browse);
+  const allFacets = result?.available_facets || result?.facets || [];
+  const allCount = allFacets.reduce((n, f) => n + f.count, 0);
+  const [profileMenu, setProfileMenu] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const wantedVersion = params.get('snapshot') || '';
@@ -499,28 +507,98 @@ export default function Workspace() {
   }, []);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${showResults ? 'has-results' : 'is-landing'}`}>
       <div className="main-shell">
+        {showResults && (
+          <a className="skip-link" href="#lookup-results">
+            Bỏ qua tới kết quả
+          </a>
+        )}
         <header className="topbar">
-          <div className="breadcrumb">
-            <Layers3 size={23} />
+          <a className="brand" href="/" aria-label="HS Atlas — trang tra cứu">
+            <Layers3 size={25} />
             <b>HS Atlas</b>
-            <span>Tra cứu mã HS Việt Nam</span>
+          </a>
+          <div className="landing-heading">
+            <span className="eyebrow">HS ATLAS · VIỆT NAM</span>
+            <h1>Tra cứu mã HS</h1>
+            <p>Từ tên hàng đến mã tham khảo, cùng nguồn để đối chiếu.</p>
           </div>
+          <div className="search-box">
+            <Search size={22} />
+            <input
+              ref={searchRef}
+              aria-label="Tìm mã HS hoặc tên hàng"
+              placeholder="Nhập tên hàng, công dụng hoặc mã HS…"
+              value={q}
+              maxLength={200}
+              onCompositionStart={() => setComposing(true)}
+              onCompositionEnd={() => setComposing(false)}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === 'Escape') {
+                  e.stopPropagation();
+                  if (q) setQ('');
+                  else e.currentTarget.blur();
+                }
+                if (e.key === 'ArrowDown' && !loading) {
+                  e.preventDefault();
+                  document.querySelector<HTMLButtonElement>('.code-link')?.focus();
+                }
+              }}
+            />
+            {q ? (
+              <button className="icon-button" aria-label="Xóa truy vấn" onClick={() => setQ('')}>
+                <X size={18} />
+              </button>
+            ) : (
+              <kbd>/</kbd>
+            )}
+          </div>
+
           <div className="top-actions">
             <button
               className="help-toggle"
+              aria-label="Hỗ trợ tìm mã"
+              aria-expanded={assistantOpen}
               onClick={() => (assistantOpen ? setAssistantOpen(false) : openHelp())}
             >
-              <MessageSquare size={16} />
-              Hỗ trợ tìm mã
+              <MessageSquare size={18} />
+              <span>Hỗ trợ tìm mã</span>
             </button>
-            <button className="data-status" onClick={() => setSource(true)}>
+            <button
+              className="data-status"
+              aria-label="Dữ liệu và nguồn"
+              onClick={() => setSource(true)}
+            >
               <span className="green-dot" />
-              HS 2022 <span className="dot-sep">·</span> {status ? num(status.count) : '…'} mã{' '}
-              <Info size={14} />
+              <span>HS 2022</span>
+              <Info size={15} />
             </button>
           </div>
+          {!showResults && (
+            <div className="landing-options">
+              <div className="quick-search">
+                <span>Thử tìm</span>
+                {['con dấu', 'máy in', 'cà phê', '01.01'].map((t) => (
+                  <button key={t} onClick={() => setQ(t)}>
+                    {t}
+                    <ArrowUpRight size={12} />
+                  </button>
+                ))}
+              </div>
+              <button className="browse-button" onClick={() => setBrowse(true)}>
+                Duyệt theo chương <ArrowRight size={15} />
+              </button>
+              <p className="search-hint">
+                Tìm bằng tên Việt, tiếng Anh, không dấu hoặc một phần mã.
+              </p>
+              <button className="intro-help" onClick={openHelp}>
+                Chưa rõ tên hàng? Mô tả bằng lời <ArrowRight size={15} />
+              </button>
+            </div>
+          )}
         </header>
         {storageError && (
           <div className="storage-warning" role="alert">
@@ -530,99 +608,42 @@ export default function Workspace() {
             </button>
           </div>
         )}
-        <main className={`workspace-grid ${assistantOpen ? '' : 'solo'}`}>
-          <section className="search-area">
+        <main className={`workspace-grid ${assistantOpen ? 'with-assistant' : 'solo'}`}>
+          <section className="search-area" id="lookup-results" tabIndex={-1}>
             {shareWarning && (
               <div className="shared-warning notice" role="status">
                 {shareWarning}
               </div>
             )}
-            <div className="page-heading">
-              <div>
-                <span className="eyebrow">DANH MỤC HÀNG HÓA VIỆT NAM</span>
-                <h1>Tra cứu mã HS</h1>
-                <p>Nhập mã hoặc tên hàng. So sánh các mã và kiểm tra nguồn khi cần.</p>
-              </div>
-              <div className="heading-symbol">
-                <Layers3 size={42} strokeWidth={1.2} />
-              </div>
-            </div>
-            <div className="search-box">
-              <Search size={22} />
-              <input
-                ref={searchRef}
-                aria-label="Tìm mã HS hoặc tên hàng"
-                placeholder="Nhập tên hàng, công dụng hoặc mã HS…"
-                value={q}
-                maxLength={200}
-                onCompositionStart={() => setComposing(true)}
-                onCompositionEnd={() => setComposing(false)}
-                onChange={(e) => setQ(e.target.value)}
-              />
-              {q ? (
-                <button className="icon-button" aria-label="Xóa truy vấn" onClick={() => setQ('')}>
-                  <X size={18} />
-                </button>
-              ) : (
-                <kbd>/</kbd>
-              )}
-            </div>
-            <div className="quick-search">
-              <span>Thử tìm</span>
-              {['con dấu', 'máy in', 'cà phê', '01.01'].map((t) => (
-                <button key={t} onClick={() => setQ(t)}>
-                  {t}
-                  <ArrowUpRight size={12} />
-                </button>
-              ))}
-            </div>
-            <SearchFilters
-              chapter={chapter}
-              dataset={dataset}
-              category={category}
-              facets={result?.available_facets || result?.facets || []}
-              loading={loading}
-              onChange={(next) => {
-                setChapter(next.chapter);
-                setDataset(next.dataset);
-                setCategory(next.category);
-              }}
-            />
-            <div className={`results-heading ${showResults ? '' : 'hidden'}`}>
-              <h2>
-                {q ? 'Kết quả tra cứu' : 'Danh mục mã HS'}{' '}
-                <span>{loading ? '…' : result ? num(result.total) : '…'}</span>
-              </h2>
-              <span className="small muted" aria-live="polite">
-                {loading
-                  ? 'Đang tìm…'
-                  : result?.mode?.startsWith('hybrid')
-                    ? 'Từ khóa + ngữ nghĩa'
-                    : 'Tìm kiếm từ khóa'}
-              </span>
-            </div>
-            <div className={`data-caveat ${showResults ? '' : 'hidden'}`}>
-              <Info size={15} />
-              <span>Kết quả là gợi ý mã. Mở chi tiết để đối chiếu mô tả, thuế và nguồn.</span>
-            </div>
-            {!showResults && (
-              <div className="search-intro">
-                <div>
-                  <BookOpen size={22} />
+            {showResults && (
+              <>
+                <div className="results-heading">
+                  <div>
+                    <h1>{q ? 'Kết quả tra cứu' : 'Danh mục HS'}</h1>
+                    <span className="result-count" aria-live="polite">
+                      {result ? num(result.total) : '…'} mã{chapter ? ` · Chương ${chapter}` : ''}
+                    </span>
+                  </div>
+                  <RankLens category={category} onChange={setCategory} />
                 </div>
-                <h2>Bạn muốn tra mặt hàng nào?</h2>
-                <p>
-                  Có thể nhập tên không dấu, tiếng Anh hoặc một phần mã.
-                  <br />
-                  Ví dụ: “con dau”, “coffee” hoặc “01.01”.
-                </p>
-                <button className="text-button" onClick={() => setBrowse(true)}>
-                  Duyệt toàn bộ danh mục <ChevronRight size={14} />
-                </button>
-                <button className="intro-help" onClick={openHelp}>
-                  Chưa biết tìm thế nào? Mô tả thêm bằng lời.
-                </button>
-              </div>
+                <ChapterChips
+                  chapter={chapter}
+                  facets={allFacets}
+                  samples={result?.items || []}
+                  query={q}
+                  loading={loading}
+                  onChange={setChapter}
+                />
+                <div className="data-caveat">
+                  <Info size={14} />
+                  <span>Mã tham khảo. Đối chiếu mô tả và nguồn trước khi khai báo.</span>
+                  {loading && (
+                    <span className="search-progress" role="status">
+                      Đang tìm…
+                    </span>
+                  )}
+                </div>
+              </>
             )}
             {error && (
               <div role="alert" className="error-box">
@@ -631,19 +652,24 @@ export default function Workspace() {
             )}
             {showResults && !loading && !error && result?.total === 0 && (
               <div className="empty-state">
-                <Search size={32} />
-                <h3>Chưa có kết quả trong phạm vi này</h3>
+                <Search size={28} />
+                <h2>
+                  {chapter
+                    ? `Không có mã khớp trong Chương ${chapter}.`
+                    : 'Chưa tìm thấy mã phù hợp'}
+                </h2>
                 <p>
-                  Thử từ khóa ngắn hơn hoặc bỏ một bộ lọc. Điều này không có nghĩa hàng không có mã
-                  HS.
+                  {chapter && allCount
+                    ? `Có ${num(allCount)} kết quả ở chương khác.`
+                    : 'Thử tên công dụng, tên tiếng Anh hoặc mô tả cụ thể hơn. Điều này không có nghĩa hàng không có mã HS.'}
                 </p>
-                <button
-                  onClick={() => {
-                    setChapter('');
-                    setDataset('all');
-                  }}
-                >
-                  Bỏ bộ lọc
+                {chapter && (
+                  <button className="primary-button" onClick={() => setChapter('')}>
+                    {allCount ? `Xem ${num(allCount)} kết quả ở mọi chương` : 'Tìm ở mọi chương'}
+                  </button>
+                )}
+                <button className="text-button" onClick={openHelp}>
+                  Mô tả hàng bằng lời <ArrowRight size={15} />
                 </button>
               </div>
             )}
@@ -651,43 +677,58 @@ export default function Workspace() {
               className={`result-list ${loading ? 'is-loading' : ''} ${showResults ? '' : 'hidden'}`}
               aria-busy={loading}
             >
-              {result?.items.map((r) => (
-                <article className="result-card" key={r.code}>
-                  <div className="record-top">
-                    <button className="code-link" onClick={() => setDetail(r)}>
-                      {displayCode(r.code)}
-                      <ArrowUpRight size={14} />
-                    </button>
-                    <span className={`dataset-tag ${r.dataset === 'chapter98' ? 'special' : ''}`}>
-                      {r.dataset === 'chapter98' ? 'CHƯƠNG 98' : `CHƯƠNG ${r.chapter}`}
-                    </span>
-                  </div>
-                  <button className="description-button" onClick={() => setDetail(r)}>
-                    {r.description.replace(/^(?:-\s*)+/, '')}
+              {result?.items.map((r, i) => (
+                <article
+                  className="result-row"
+                  key={r.code}
+                  data-code={r.code}
+                  data-chapter={r.chapter}
+                >
+                  <button
+                    className="code-link"
+                    onClick={() => setDetail(r)}
+                    onKeyDown={(e) => {
+                      if (['ArrowDown', 'ArrowUp'].includes(e.key)) {
+                        e.preventDefault();
+                        const codes = document.querySelectorAll<HTMLButtonElement>('.code-link');
+                        codes[
+                          Math.max(
+                            0,
+                            Math.min(codes.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)),
+                          )
+                        ]?.focus();
+                      }
+                      if (e.key === ' ' || e.key === 'x') {
+                        e.preventDefault();
+                        toggle(r);
+                      }
+                    }}
+                  >
+                    {displayCode(r.code)}
                   </button>
-                  {r.description_en && <p className="english-reference">{r.description_en}</p>}
-                  <div className="record-bottom">
-                    <span>
-                      {r.raw.don_vi_tinh || 'Chưa ghi đơn vị'}
-                      <i />
-                      Nhóm {r.heading}
-                      <i />
-                      <span className="reference-label">Nguồn tham khảo</span>
-                    </span>
-                    <button
-                      className={`compare-toggle ${selected.some((x) => x.code === r.code) ? 'on' : ''}`}
-                      aria-pressed={selected.some((x) => x.code === r.code)}
-                      aria-label={`So sánh ${r.code}`}
-                      onClick={() => toggle(r)}
-                    >
-                      {selected.some((x) => x.code === r.code) ? (
-                        <Check size={14} />
-                      ) : (
-                        <Plus size={14} />
-                      )}
-                      So sánh
+                  <div className="record-description">
+                    <button className="description-button" onClick={() => setDetail(r)}>
+                      {r.description.replace(/^(?:-\s*)+/, '')}
                     </button>
+                    <div className="record-meta">
+                      <span>
+                        {r.raw.don_vi_tinh || 'Chưa ghi đơn vị'} · Nhóm {r.heading}
+                      </span>
+                      {r.dataset === 'chapter98' && (
+                        <span className="dataset-tag special">Bổ sung VN</span>
+                      )}
+                      <span className="english-reference">{r.description_en}</span>
+                    </div>
                   </div>
+                  <label className="compare-toggle">
+                    <input
+                      type="checkbox"
+                      aria-label={`So sánh ${r.code}`}
+                      checked={selected.some((x) => x.code === r.code)}
+                      onChange={() => toggle(r)}
+                    />
+                    <span>So sánh</span>
+                  </label>
                 </article>
               ))}
             </div>
@@ -715,14 +756,14 @@ export default function Workspace() {
               xác minh pháp lý từng dòng.
             </footer>
           </section>
-          <aside ref={assistantRef} className={`assistant-panel ${assistantOpen ? '' : 'hidden'}`}>
+          <AssistantPanel open={assistantOpen} onClose={() => setAssistantOpen(false)}>
             <header>
               <span className="assistant-icon">
                 <MessageSquare size={19} />
               </span>
               <div>
                 <h2>Hỗ trợ tìm mã</h2>
-                <p>Mô tả thêm theo từng sản phẩm</p>
+                <p className="assistant-context">Đang hỏi về: {active?.query || q || 'món hàng'}</p>
               </div>
               <button
                 className="icon-button close-help"
@@ -732,66 +773,83 @@ export default function Workspace() {
                 <X size={16} />
               </button>
             </header>
-            <div className="panel-tabs">
-              <button className={tab === 'chat' ? 'active' : ''} onClick={() => setTab('chat')}>
-                Hội thoại
-              </button>
-              <button
-                className={tab === 'profile' ? 'active' : ''}
-                onClick={() => setTab('profile')}
-              >
-                Hồ sơ <span>{active ? Object.keys(active.facts).length : 0}</span>
-              </button>
+            <div className="profile-toolbar">
+              {tab === 'profile' ? (
+                <button className="text-button" onClick={() => setTab('chat')}>
+                  <ArrowLeft size={15} />
+                  Quay lại hội thoại
+                </button>
+              ) : (
+                <button
+                  className="profile-switch"
+                  aria-expanded={profileMenu}
+                  onClick={() => setProfileMenu((v) => !v)}
+                >
+                  Hồ sơ: {active?.name || 'Sản phẩm mới'}
+                  <ChevronDown size={14} />
+                </button>
+              )}
+              {tab === 'chat' && (
+                <button
+                  className="text-button"
+                  aria-label="Sửa hồ sơ"
+                  onClick={() => setTab('profile')}
+                >
+                  Sửa thông tin
+                </button>
+              )}
             </div>
-            <div className="active-product">
-              <span className="green-dot" />
-              <select
-                aria-label="Sản phẩm đang trao đổi"
-                value={active?.id || ''}
-                disabled={sending}
-                onChange={(e) => {
-                  if (workspace) {
-                    const id = e.target.value;
-                    setWorkspace({ ...workspace, activeId: id });
-                    setQ(workspace.products.find((p) => p.id === id)?.query || '');
-                  }
-                }}
-              >
-                {workspace?.products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="icon-button"
-                aria-label="Tạo sản phẩm mới"
-                disabled={sending || !workspace}
-                onClick={() => workspace && setWorkspace(addProduct(workspace))}
-              >
-                <Plus size={16} />
-              </button>
-            </div>
+            {profileMenu && tab === 'chat' && (
+              <div className="profile-menu">
+                <label>
+                  Chọn sản phẩm
+                  <select
+                    aria-label="Sản phẩm đang trao đổi"
+                    value={active?.id || ''}
+                    disabled={sending}
+                    onChange={(e) => {
+                      if (workspace) {
+                        setWorkspace({ ...workspace, activeId: e.target.value });
+                        setQ(workspace.products.find((p) => p.id === e.target.value)?.query || '');
+                        setProfileMenu(false);
+                      }
+                    }}
+                  >
+                    {workspace?.products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  className="secondary-button"
+                  disabled={sending || !workspace}
+                  onClick={() => {
+                    if (workspace) {
+                      setWorkspace(addProduct(workspace));
+                      setQ('');
+                      setProfileMenu(false);
+                    }
+                  }}
+                >
+                  <Plus size={15} />
+                  Tra món hàng khác
+                </button>
+              </div>
+            )}
             {tab === 'chat' ? (
               <>
                 <div className="messages" ref={messagesRef}>
                   {!active?.messages.length && (
                     <div className="welcome">
-                      <div className="welcome-icon">
-                        <Layers3 size={28} />
-                      </div>
-                      <h3>Bắt đầu từ điều bạn biết.</h3>
+                      <MessageSquare size={22} />
+                      <h3>Cùng làm rõ mặt hàng</h3>
                       <p>
-                        Mô tả hàng hóa bằng lời thường. Thông tin được giữ theo từng sản phẩm và có
-                        thể sửa lại.
+                        Mô tả công dụng, vật liệu hoặc cách hoạt động của{' '}
+                        <b>{active?.query || q || 'món hàng'}</b> để tìm tiếp.
                       </p>
-                      <div className="chat-example">
-                        <span>Ví dụ</span>“Tra con dấu đóng mực bằng tay”
-                      </div>
-                      <p className="small">
-                        Bạn có thể sửa lời khai trong Hồ sơ. Kết quả vẫn cần đối chiếu trước khi
-                        khai báo.
-                      </p>
+                      <span>Thông tin được giữ riêng theo từng hồ sơ.</span>
                     </div>
                   )}
                   {active?.messages.map((m, i) => (
@@ -1001,13 +1059,13 @@ export default function Workspace() {
                 <div className="notice small">
                   <Info size={15} />
                   <span>
-                    Lời khai hỗ trợ xếp hạng trong hội thoại. Bộ lọc chương/bộ dữ liệu được dùng cho
-                    cả danh sách và hội thoại.
+                    Lời khai hỗ trợ xếp hạng trong hội thoại. Bộ lọc chương được dùng cho cả danh
+                    sách và hội thoại.
                   </span>
                 </div>
               </div>
             )}
-          </aside>
+          </AssistantPanel>
         </main>
       </div>
       {selected.length > 0 && (
@@ -1034,7 +1092,28 @@ export default function Workspace() {
           {toast}
         </div>
       )}
-      {detail && <RecordDetails record={detail} onClose={() => setDetail(null)} />}
+      {detail && (
+        <RecordDetails
+          record={detail}
+          onClose={() => setDetail(null)}
+          selected={selected.some((r) => r.code === detail.code)}
+          onToggle={() => toggle(detail)}
+          previous={
+            result && result.items.findIndex((r) => r.code === detail.code) > 0
+              ? () =>
+                  setDetail(result.items[result.items.findIndex((r) => r.code === detail.code) - 1])
+              : undefined
+          }
+          next={
+            result &&
+            result.items.findIndex((r) => r.code === detail.code) >= 0 &&
+            result.items.findIndex((r) => r.code === detail.code) < result.items.length - 1
+              ? () =>
+                  setDetail(result.items[result.items.findIndex((r) => r.code === detail.code) + 1])
+              : undefined
+          }
+        />
+      )}
       {compare && (
         <Dialog title="So sánh mã ứng viên" onClose={() => setCompare(false)}>
           <div className="detail-body">
