@@ -44,7 +44,9 @@ Không gộp mã chỉ vì cùng mô tả “Loại khác”. Không tự sửa 
 
 Mỗi mapping lưu `source`, `method` (rule/manual/model), `review_status`, `evidence`, `taxonomy_version`. Điểm tự tin của mô hình không phải xác suất đúng đã được kiểm định.
 
-Nhãn đã duyệt có thể dùng filter cứng; nhãn AI chưa duyệt chỉ boost/rerank hoặc hiển thị để xác nhận. Thiếu nhãn không đồng nghĩa không phù hợp. Với facet thuộc tính chưa phủ đủ, hiển thị mức bao phủ và nhóm “chưa rõ”.
+Nhãn đã duyệt có thể dùng filter cứng khi người dùng chủ động chọn; nhãn AI chưa duyệt chỉ boost/rerank hoặc hiển thị để xác nhận. Thiếu nhãn không đồng nghĩa không phù hợp. Với facet thuộc tính chưa phủ đủ, hiển thị mức bao phủ và nhóm “chưa rõ”. Nếu có chế độ bao gồm chưa rõ, phải ghi rõ trên chip và đếm riêng, không hiển thị như chỉ có giá trị đã chọn.
+
+Thử gắn nhóm tiện ích ở cấp nhóm rồi kế thừa có ngoại lệ thay vì duyệt mọi dòng riêng lẻ; kiểm tra độ phủ và tính đúng trước khi áp rộng. Alias đa nghĩa nên gắn khái niệm và các nghĩa, rồi ánh xạ sang nhiều nhánh; không ép một tên phổ thông về một mã duy nhất.
 
 Alias có thể một-nhiều và theo ngữ cảnh. Ví dụ “con dấu”, “dấu đóng”, “stamp” cần kiểm tra, không ép mọi nghĩa về một mã duy nhất.
 

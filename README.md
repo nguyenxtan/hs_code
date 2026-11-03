@@ -2,7 +2,7 @@
 
 Dự án mã nguồn mở hỗ trợ tra cứu HS, lọc hàng hóa và hội thoại RAG có dẫn nguồn.
 
-**Trạng thái:** đang thiết kế và tham vấn Claude Code; chưa có ứng dụng chạy được. Các lựa chọn kỹ thuật dưới đây là đề xuất cần kiểm chứng bằng dữ liệu và thử nghiệm người dùng.
+**Trạng thái:** đã có phản biện thiết kế từ Claude Code và bản tổng hợp của coordinator; chưa có ứng dụng chạy được. Các lựa chọn kỹ thuật dưới đây là đề xuất cần kiểm chứng bằng dữ liệu và thử nghiệm người dùng.
 
 ## Trải nghiệm hướng đến
 
@@ -22,10 +22,14 @@ Dự án mã nguồn mở hỗ trợ tra cứu HS, lọc hàng hóa và hội th
 5. [Lộ trình và đánh giá](docs/roadmap.md)
 6. [Nguồn và giấy phép dữ liệu](docs/data-sources.md)
 7. [Đề bài tham vấn Claude Code](docs/consultations/claude-brief.md)
+8. [Báo cáo độc lập của Claude Code](docs/consultations/claude-review.md)
+9. [Tổng hợp, điều chỉnh và đề xuất sau tham vấn](docs/consultations/synthesis.md)
 
 ## Hướng triển khai ban đầu
 
-Ứng dụng Next.js/TypeScript và PostgreSQL, thêm pgvector khi triển khai truy xuất ngữ nghĩa; worker cho nhập dữ liệu và lập chỉ mục. Tách adapter mô hình chat/embedding, giữ API key phía server. Docker Compose cho tự triển khai. Đây là lựa chọn khởi điểm, chưa phải kết quả benchmark hay quyết định đã được chủ dự án duyệt.
+Ứng dụng Next.js/TypeScript và PostgreSQL, thêm pgvector khi triển khai truy xuất ngữ nghĩa. Pipeline dữ liệu chạy offline, xuất snapshot có manifest và báo cáo chất lượng; worker online chỉ thêm khi có tác vụ cần. Tách adapter mô hình chat/embedding, giữ API key phía server. Docker Compose cho tự triển khai. Đây là lựa chọn khởi điểm, chưa phải kết quả benchmark hay quyết định đã được chủ dự án duyệt.
+
+MVP đề xuất đi theo hai bước: tra cứu/filter có căn cứ và so sánh mã trước; chat RAG dùng chung hồ sơ sau. Thuế thô được hiển thị tham khảo, chưa dùng lọc hoặc sắp xếp theo mức thuế. Xem bản tổng hợp để hiểu các giới hạn của báo cáo tham vấn.
 
 ## Đóng góp
 

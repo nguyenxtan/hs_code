@@ -2,7 +2,7 @@
 
 ## Giai đoạn 0 — thiết kế và bằng chứng
 
-Hoàn thành brief, phản biện Claude Code, ghi quyết định và phần còn mở. Xác nhận license và quyền dùng nguồn bổ sung. Không coi tài liệu kiến trúc là ứng dụng đã triển khai.
+Brief, báo cáo Claude và tổng hợp đã có trong `consultations/`; đề xuất vẫn chờ thống nhất trước implementation. Xác nhận license và quyền dùng nguồn bổ sung. Không coi tài liệu kiến trúc là ứng dụng đã triển khai.
 
 ## Giai đoạn 1 — nền dữ liệu
 
@@ -12,7 +12,7 @@ Nghiệm thu: tái lập import; bảo toàn raw; đối soát 11.414 dòng củ
 
 ## Giai đoạn 2 — tra cứu và filter
 
-Exact/prefix, tìm từ khóa Việt/Anh, facet và trang chi tiết/nguồn. Có link chia sẻ trạng thái filter an toàn; UI responsive và bàn phím dùng được.
+Exact/prefix, tìm từ khóa Việt/Anh, facet và trang chi tiết/nguồn; so sánh mã, thu hẹp có hướng dẫn dựa trên điểm phân biệt đã duyệt. Có link chia sẻ trạng thái filter an toàn; UI responsive và bàn phím dùng được. Chưa filter/sắp xếp thuế thô.
 
 Nghiệm thu: bộ truy vấn baseline gồm tên phổ thông, không dấu, typo, alias, “loại khác”; đo top-k và độ trễ; kiểm tra filter không làm mất dòng do thiếu nhãn.
 
@@ -30,7 +30,7 @@ Nghiệm thu: con dấu nhiều lượt, sửa lời khai, câu hỏi rời, chu
 
 Tập câu hỏi chuẩn do chuyên gia duyệt, có phần tách riêng không dùng để tinh chỉnh. Gồm mã dễ, mã gần nhau, thiếu dữ kiện, thuật ngữ đa nghĩa, nguồn mâu thuẫn và ngoài phạm vi.
 
-So sánh từ khóa với hybrid trên cùng tập trước khi thêm reranker. Đánh giá riêng tìm ứng viên, hỏi làm rõ, trích dẫn và lời giải; không chỉ chấm văn phong. Mục tiêu số cụ thể được chốt sau baseline, không suy từ điểm similarity.
+So sánh từ khóa với hybrid trên cùng tập trước khi thêm reranker. Đánh giá riêng tìm ứng viên, hỏi làm rõ, trích dẫn và lời giải; không chỉ chấm văn phong. Đo cả câu hỏi thừa và hội tụ sai, citation có hỗ trợ nhận định chứ không chỉ khớp chữ. Mục tiêu số cụ thể được chốt sau baseline, không suy từ điểm similarity.
 
 ## Điều kiện bắt đầu code
 

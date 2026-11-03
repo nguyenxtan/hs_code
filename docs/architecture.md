@@ -1,5 +1,7 @@
 # Kiến trúc đề xuất
 
+Đã có [tổng hợp sau tham vấn](consultations/synthesis.md). Tài liệu này cập nhật đề xuất, chưa có benchmark hay phê duyệt triển khai.
+
 ## So sánh phương án
 
 | Phương án | Ưu điểm | Đánh đổi |
@@ -16,7 +18,7 @@
 - API: xác thực, phiên, hồ sơ sản phẩm, tìm kiếm tham số hóa, truy xuất và phản hồi streaming.
 - PostgreSQL: HS có phiên bản, cây phân cấp, nhãn, trạng thái hội thoại, tài liệu và nhật ký thay đổi.
 - Tìm kiếm: ưu tiên exact/prefix; kết hợp từ khóa và vector khi có embedding; rerank nếu đo được lợi ích. Facet từ dữ liệu có cấu trúc, không từ top-k vector.
-- Worker: import, validation, chuẩn hóa, chia đoạn, embedding, xuất quality report; công việc idempotent theo hash nội dung và phiên bản pipeline.
+- Pipeline offline: import, validation, chuẩn hóa, chia đoạn, embedding, xuất quality report và snapshot có manifest/hash/schema version. App nạp snapshot đã publish; không phụ thuộc pipeline chạy trong request. Worker online chỉ thêm khi tác vụ thực tế đòi hỏi. Công việc idempotent theo hash nội dung và phiên bản pipeline.
 - Model adapters: chat và embedding có thể dùng nhà cung cấp khác; không gắn cứng tên model. Thay embedding model cần tạo lại index tương thích, không trộn vector khác không gian.
 - File storage: file gốc, bản xuất, backup; MVP có thể dùng volume, production dùng kho riêng ngoài máy ứng dụng.
 
@@ -36,10 +38,12 @@
 - `tax_records`: raw + bản chuẩn hóa + điều kiện, thời gian, căn cứ, trạng thái xác minh.
 - `categories`, `code_categories`, `attributes`, `code_attributes`, `aliases`: quan hệ nhiều-nhiều, nguồn và trạng thái duyệt.
 - `documents`, `document_versions`, `chunks`, `embeddings`: URI, hash, vị trí đoạn, license, model/version/dimensions.
-- `conversations`, `messages`, `products`, `product_facts`, `fact_events`, `summaries`: owner, revision, nguồn message, trạng thái xác nhận/suy đoán và lịch sử thay đổi.
+- `conversations`, `messages`, `products`, `product_facts`, `fact_events`, `summaries`: owner, revision, nguồn message, trạng thái xác nhận/suy đoán và lịch sử thay đổi. Biến thể liên kết hồ sơ gốc; bộ hàng có cấu trúc thành phần, không tự chia thành các quyết định mã độc lập.
 - `ingestion_runs`, `quality_issues`, `evaluation_runs`: tái lập và kiểm tra chất lượng.
 
 Đây là mô hình khái niệm, chưa phải migration SQL.
+
+Tách ba trục version: phiên bản danh mục, hiệu lực chính sách và snapshot ingest. Các quan hệ chuyển đổi mã giữa danh mục có thể nhiều-nhiều; phiên chat lưu dataset đã dùng, không âm thầm đổi sang bản mới.
 
 ## Hạ tầng và vận hành
 
