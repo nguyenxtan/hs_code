@@ -45,6 +45,8 @@ npm run build
 npm run test:e2e
 ```
 
+[Báo cáo dùng thử UI/UX trực tiếp](docs/qa/2026-11-03-ui-walkthrough.md) ghi các lỗi thực tế, sửa đổi và giới hạn còn lại.
+
 Browser tests cần dữ liệu local và Chromium. [Runbook](docs/runbook.md) có thiết lập PostgreSQL, embedding, provider chat, backup/restore và các việc còn cần cho public production.
 
 ## Thiết kế và các lượt tham vấn

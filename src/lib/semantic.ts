@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Snapshot, SearchOptions, SearchResult } from './types';
-import { searchRecords, parseQuery, fold } from './search';
+import { searchRecords, parseQuery, fold, queryPhrase } from './search';
 export function cosine(a: number[], b: number[]): number {
   if (a.length !== b.length) return 0;
   let dot = 0,
@@ -100,7 +100,7 @@ export async function hybridSearch(
       semantic,
     );
     // Preserve exact phrase matches ahead of vector-only relevance differences.
-    const phrase = parseQuery(options.q).text;
+    const phrase = queryPhrase(options.q);
     const exactPhrase = (code: string) => fold(allowed.get(code)!.description).includes(phrase);
     merged.sort((a, b) => Number(exactPhrase(b)) - Number(exactPhrase(a)));
     const offset = options.offset ?? 0,

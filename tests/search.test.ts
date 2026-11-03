@@ -9,7 +9,7 @@ const row = (code: string, description: string): HSRecord => ({
   chapter: code.slice(0, 2),
   heading: code.slice(0, 4),
   subheading: code.slice(0, 6),
-  search_text: description,
+  search_text: fold(description),
   raw: { vat_raw: '8/10' },
   context_complete: false,
   corresponding_code: '',
@@ -88,4 +88,16 @@ it('does not classify a greeting as a product but preserves cookware and product
   expect(hasSearchIntent('hello')).toBe(false);
   expect(hasSearchIntent('chảo')).toBe(true);
   expect(hasSearchIntent('tra chao')).toBe(true);
+});
+it('uses accents to avoid treating con dấu as còn/đầu when a full typed match exists', () => {
+  const r = searchRecords(
+    [
+      row('43011000', 'Của loài chồn, da nguyên con, có hoặc không có đầu'),
+      row('03061721', 'Đã bỏ đầu, còn đuôi'),
+      row('96110000', 'Con dấu ngày, con dấu niêm phong; bộ in bằng tay'),
+    ],
+    { q: 'Tôi cần tra con dấu' },
+  );
+  expect(r.items.map((x) => x.code)).toEqual(['96110000']);
+  expect(searchRecords(rows, { q: 'ngua thuan' }).items[0].code).toBe('01012100');
 });

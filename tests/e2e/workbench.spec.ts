@@ -29,7 +29,7 @@ test('mobile assistant inherits query and returns to the same scroll and opener'
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('máy in');
-  await expect(page.locator('.result-row').nth(9)).toBeAttached();
+  await expect(page.locator('.result-row').nth(9)).toBeVisible();
   const first = await page.locator('.result-row').first().boundingBox();
   expect(first!.y).toBeLessThanOrEqual(260);
   const visible = await page.locator('.result-row').evaluateAll(

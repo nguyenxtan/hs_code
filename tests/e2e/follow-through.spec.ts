@@ -9,7 +9,7 @@ test('failed lookup can be retried without showing stale rows or losing the quer
   await expect(page.locator('.code-link').first()).toHaveText('9611.00.00');
   await page.route('**/api/search?**', (route) => route.abort('failed'));
   await input.fill('01.01');
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.locator('.error-box')).toBeVisible();
   await expect(page.locator('.result-list')).not.toBeVisible();
   await page.unroute('**/api/search?**');
   await page.getByRole('button', { name: 'Thử tải lại', exact: true }).click();

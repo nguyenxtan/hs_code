@@ -26,7 +26,7 @@ Importer có transaction, khóa theo tác vụ, khóa mã theo version và idemp
 
 Index ghi nguyên tử, có ID snapshot/model/dimensions; script có thể chạy lại để tiếp tục. Bật `HS_EMBEDDINGS_ENABLED=true` và restart app sau khi index hoàn thành. Mất index, khác snapshot hoặc model lỗi thì dùng lexical fallback. Index một phần được gắn mode riêng, không coi đã phủ toàn dataset. Sau review, vector chỉ xếp lại ứng viên từ khóa/fuzzy; không có căn cứ từ khóa thì trả rỗng, không đưa top-40 vô điều kiện. Đây là lựa chọn bảo thủ trước khi có bộ gold và alias duyệt; không bảo đảm tìm được mọi tên thương mại.
 
-Giới hạn dev: vectors nằm file runtime, tìm cosine ở app; chưa cần ANN cho quy mô này. Không xem việc tạo đủ vectors là benchmark recall. Giới hạn memory/tải đồng thời và chất lượng search cần pilot trước public deployment.
+Giới hạn dev: vectors nằm file runtime, tìm cosine ở app; chưa cần ANN cho quy mô này. Không xem việc tạo đủ vectors là benchmark recall. Khi có khớp đầy đủ với từ có dấu người dùng nhập, tìm kiếm dùng tập khớp đó trước; nếu không có thì dùng khớp không dấu/fuzzy. Lời khai chỉ xếp hạng, không loại mã, và được gửi trong body POST khi danh sách đang tra đúng hồ sơ. Cách này vẫn cần đánh giá recall trên bộ gold. Giới hạn memory/tải đồng thời và chất lượng search cần pilot trước public deployment.
 
 ## Trợ lý và mô hình chat
 

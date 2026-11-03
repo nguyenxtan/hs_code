@@ -59,6 +59,20 @@ export function hasSearchIntent(query: string): boolean {
     ? /^\d{1,8}$/.test(p.text)
     : p.text.split(' ').some((t) => t.length > 1 && !stops.has(t));
 }
+function queryTerms(query: string, accented = false): string[] {
+  const words =
+    query
+      .normalize('NFC')
+      .toLocaleLowerCase('vi')
+      .match(/[\p{L}\p{N}]+/gu) || [];
+  const hasProductTerm = words.some((t) => !stops.has(fold(t)));
+  return words
+    .filter((t) => !stops.has(fold(t)) || (fold(t) === 'con' && hasProductTerm))
+    .map((t) => (accented ? t : fold(t)));
+}
+export function queryPhrase(query: string): string {
+  return queryTerms(query).join(' ');
+}
 function grams(s: string): Set<string> {
   const v = new Set<string>();
   for (let i = 0; i < s.length - 2; i++) v.add(s.slice(i, i + 3));
@@ -73,11 +87,10 @@ function similarity(a: string, b: string): number {
 }
 export function searchRecords(records: HSRecord[], options: SearchOptions): SearchResult {
   const parsed = parseQuery(options.q ?? '');
-  const words = parsed.text.split(' ');
-  const hasProductTerm = words.some((t) => t && !stops.has(t));
-  // Keep “con” inside product names (con dấu, con lăn). Dropping it makes
-  // unaccented “dấu” indistinguishable from “đầu” plus generic attributes.
-  const terms = words.filter((t) => t && (!stops.has(t) || (t === 'con' && hasProductTerm)));
+  const terms = queryTerms(options.q || '');
+  const typedTerms = queryTerms(options.q || '', true);
+  const accented = /[\p{M}đĐ]/u.test((options.q || '').normalize('NFD'));
+  const phrase = terms.join(' ');
   const facts = (options.facts ?? []).map(fold);
   let hits = records
     .filter(
@@ -87,6 +100,14 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
     )
     .map((r) => {
       const text = fold(r.search_text || `${r.description} ${r.description_en}`);
+      // search_text is already folded by preparation; keep accents from display text.
+      const typedWords = new Set(
+        `${r.code} ${r.description} ${r.description_en}`
+          .normalize('NFC')
+          .toLocaleLowerCase('vi')
+          .match(/[\p{L}\p{N}]+/gu) || [],
+      );
+      const typedMatch = typedTerms.length > 0 && typedTerms.every((t) => typedWords.has(t));
       let score = 0,
         allTerms = false;
       if (parsed.numeric)
@@ -99,15 +120,19 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
           /^[a-z0-9]+$/.test(t) ? words.has(t) : text.includes(t),
         ).length;
         allTerms = matched === terms.length;
-        if (matched) score = (matched / terms.length) * 100 + (text.includes(parsed.text) ? 50 : 0);
+        if (matched) score = (matched / terms.length) * 100 + (text.includes(phrase) ? 50 : 0);
       }
       const boost =
         facts.reduce((n, f) => n + (f && text.includes(f) ? 3 : 0), 0) +
         (categoryMatch(options.category, r.code) ? 35 : 0);
-      return { r, score, boost, allTerms };
+      return { r, score, boost, allTerms, typedMatch };
     })
     .filter((x) => x.score > 0);
-  if (!parsed.numeric && terms.length > 1 && hits.some((x) => x.allTerms))
+  // Prefer a full match to the user's actual accented words when available.
+  // Keep accent-insensitive fallback when it is not; facts never exclude rows.
+  if (!parsed.numeric && accented && hits.some((x) => x.typedMatch))
+    hits = hits.filter((x) => x.typedMatch);
+  else if (!parsed.numeric && terms.length > 1 && hits.some((x) => x.allTerms))
     hits = hits.filter((x) => x.allTerms);
   if (!hits.length && !parsed.numeric && terms.length > 0 && parsed.text.length >= 4) {
     hits = records
@@ -121,6 +146,7 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
         score: similarity(parsed.text, fold(r.description + ' ' + r.description_en)) * 100,
         boost: 0,
         allTerms: false,
+        typedMatch: false,
       }))
       .filter((x) => x.score > 20);
   }

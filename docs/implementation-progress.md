@@ -59,3 +59,9 @@ Plan: docs/superpowers/plans/2026-11-03-hs-code-mvp.md
 - Details now offer “Hỏi trợ lý về mã này”; code context persists per profile and its edit history, with visible distinction from lookup chapter scope. Handoff closes comparison/details, keeps lookup query/filter and retrieves the chosen code from the active snapshot.
 - Lookup fetch failures offer retry and hide stale rows; pure greeting chat does not retrieve arbitrary HS references. Original screenshot network incident was not reproducible against live API, so no asserted root cause beyond observed old UI.
 - Final checks for this change: 31 unit, 28 browser, typecheck/build passed. See `docs/superpowers/plans/2026-11-03-lookup-follow-through.md` for review/failure-reproduction evidence.
+
+## Direct UI walkthrough and fixes
+
+- User requested actual use of UI/UX. Completed an interactive headed-Chromium walkthrough on desktop and touch/mobile emulation, including natural descriptions, fact correction/undo, chapter narrowing, comparison, code handoff, and reload/resume. Report: `docs/qa/2026-11-03-ui-walkthrough.md`.
+- Found/fixed natural-language ranking/diacritic confusion, missing fact hints in the lookup pane, stale rows flashing under a new query, excessive extractive text and resumed chat opening above the latest reply. Production-style folded search_text fixtures now prevent false confidence in accented matching.
+- Final checks: 32 unit, 6 data, 33 browser; typecheck/build passed. Actual mobile resume distance from latest reply 0px. Default source extraction still does not provide LLM reasoning; Safari/device keyboard and gold retrieval accuracy remain unverified.

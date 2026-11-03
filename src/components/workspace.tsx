@@ -201,6 +201,7 @@ export default function Workspace() {
     [loading, setLoading] = useState(true),
     [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
+  const [resultQuery, setResultQuery] = useState<string | null>(null);
   const [status, setStatus] = useState<{
     count: number;
     main: number;
@@ -232,6 +233,8 @@ export default function Workspace() {
     messagesRef = useRef<HTMLDivElement>(null);
   const active =
     workspace?.products.find((p) => p.id === workspace.activeId) || workspace?.products[0];
+  const factKey = JSON.stringify(active?.query === q ? Object.values(active.facts) : []);
+  const queryPending = resultQuery !== q;
 
   useEffect(() => {
     if (window.innerWidth > 760) ragRef.current?.focus({ preventScroll: true });
@@ -278,7 +281,7 @@ export default function Workspace() {
   }, []);
   useEffect(() => {
     setOffset(0);
-  }, [q, chapter, dataset, category]);
+  }, [q, chapter, dataset, category, factKey]);
   useEffect(() => {
     if (composing) return;
     setLoading(true);
@@ -287,13 +290,23 @@ export default function Workspace() {
       setLoading(true);
       setError('');
       const params = new URLSearchParams({ q, chapter, dataset, category, offset: String(offset) });
-      fetch('/api/search?' + params, { signal: controller.signal })
+      fetch('/api/search?' + params, {
+        signal: controller.signal,
+        ...(factKey !== '[]'
+          ? {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ facts: JSON.parse(factKey) }),
+            }
+          : {}),
+      })
         .then(async (r) => {
           const v = await r
             .json()
             .catch(() => ({ error: 'Chưa đọc được phản hồi. Vui lòng thử lại.' }));
           if (!r.ok || v.error) throw Error(v.error);
           setResult(v);
+          setResultQuery(q);
         })
         .catch((e) => {
           if (e.name !== 'AbortError')
@@ -311,10 +324,15 @@ export default function Workspace() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [q, chapter, dataset, category, offset, composing, retry]);
+  }, [q, chapter, dataset, category, offset, composing, retry, factKey]);
   useEffect(() => {
-    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' });
-  }, [active?.messages.length, sending]);
+    if (!assistantOpen || tab !== 'chat') return;
+    const frame = requestAnimationFrame(() => {
+      const messages = messagesRef.current;
+      messages?.scrollTo({ top: messages.scrollHeight, behavior: 'auto' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [active?.id, active?.messages.length, sending, assistantOpen, tab]);
   function openHelp() {
     if (!showResults && !active?.query && !active?.messages.length) {
       ragRef.current?.scrollIntoView({ block: 'center', behavior: 'auto' });
@@ -536,7 +554,7 @@ export default function Workspace() {
       ? ''
       : `${window.location.origin}/?codes=${selected.map((r) => r.code).join(',')}&snapshot=${encodeURIComponent(status?.version || '')}`;
   const showResults = !!(q.trim() || chapter || category || browse);
-  const allFacets = result?.available_facets || result?.facets || [];
+  const allFacets = queryPending ? [] : result?.available_facets || result?.facets || [];
   const allCount = allFacets.reduce((n, f) => n + f.count, 0);
   const [profileMenu, setProfileMenu] = useState(false);
   useEffect(() => {
@@ -731,24 +749,26 @@ export default function Workspace() {
                   <div>
                     <h1>{q ? 'Kết quả tra cứu' : 'Danh mục HS'}</h1>
                     <span className="result-count" aria-live="polite">
-                      {error ? '—' : result ? num(result.total) : '…'} mã
+                      {error ? '—' : !queryPending && result ? num(result.total) : '…'} mã
                       {chapter ? ` · Chương ${chapter}` : ''}
                     </span>
                   </div>
                   <RankLens category={category} onChange={setCategory} />
                 </div>
-                <ChapterChips
-                  chapter={chapter}
-                  facets={allFacets}
-                  samples={result?.items || []}
-                  query={q}
-                  loading={loading || !!error}
-                  onChange={setChapter}
-                />
+                {!queryPending && (
+                  <ChapterChips
+                    chapter={chapter}
+                    facets={allFacets}
+                    samples={result?.items || []}
+                    query={q}
+                    loading={loading || !!error}
+                    onChange={setChapter}
+                  />
+                )}
                 <div className="data-caveat">
                   <Info size={14} />
                   <span>Mã tham khảo. Đối chiếu mô tả và nguồn trước khi khai báo.</span>
-                  {loading && (
+                  {(loading || queryPending) && (
                     <span className="search-progress" role="status">
                       Đang tìm…
                     </span>
@@ -764,7 +784,7 @@ export default function Workspace() {
                 </button>
               </div>
             )}
-            {showResults && !loading && !error && result?.total === 0 && (
+            {showResults && !queryPending && !loading && !error && result?.total === 0 && (
               <div className="empty-state">
                 <Search size={28} />
                 <h2>
@@ -788,7 +808,7 @@ export default function Workspace() {
               </div>
             )}
             <div
-              className={`result-list ${loading ? 'is-loading' : ''} ${showResults && !error ? '' : 'hidden'}`}
+              className={`result-list ${loading ? 'is-loading' : ''} ${showResults && !queryPending && !error ? '' : 'hidden'}`}
               aria-busy={loading}
             >
               {result?.items.map((r, i) => (
@@ -846,7 +866,7 @@ export default function Workspace() {
                 </article>
               ))}
             </div>
-            {showResults && !error && result && result.total > 30 && (
+            {showResults && !queryPending && !error && result && result.total > 30 && (
               <div className="pagination">
                 <button
                   disabled={offset === 0 || loading}

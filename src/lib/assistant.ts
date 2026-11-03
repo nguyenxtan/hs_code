@@ -17,7 +17,16 @@ export function extractiveReply(
     };
   return {
     mode: 'extractive',
-    content: `Đã tra theo hồ sơ hiện tại. ${items.length} mã tham khảo gần nhất:\n\n${items.map((r, i) => `${r.code} — ${r.description} [${i + 1}]`).join('\n\n')}\n\nNguồn hiện chưa có đầy đủ mô tả cấp cha và chú giải phân loại. Đây là ứng viên từ tìm kiếm, chưa phải kết luận mã. Bạn có thể mở chi tiết hoặc so sánh để kiểm tra mô tả; bổ sung công dụng/thông số nếu cần tìm tiếp.`,
+    content: `${items.length} mã tham khảo theo hồ sơ hiện tại:\n\n${items
+      .map((r, i) => {
+        const description = r.description.replace(/^(?:-\s*)+/, '');
+        const excerpt =
+          description.length > 220 ? description.slice(0, 220).trimEnd() + '…' : description;
+        return `${r.code} — ${excerpt} [${i + 1}]`;
+      })
+      .join(
+        '\n\n',
+      )}\n\nMở nguồn để đọc đầy đủ hoặc bổ sung công dụng, thông số. Mô tả cấp cha/chú giải chưa đầy đủ; đây chưa phải kết luận mã.`,
   };
 }
 export function safeGeneratedText(text: string, codes: string[]): boolean {
