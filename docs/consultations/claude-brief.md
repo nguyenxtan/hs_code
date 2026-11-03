@@ -8,6 +8,8 @@ Dữ liệu, ví dụ con dấu, hiện trạng đã được ghi ở các tài 
 
 ## Phạm vi tư vấn
 
+Vai trò được chủ dự án xác nhận: Claude chỉ tham vấn, review kiến trúc tổng thể, review code khi có và đề xuất phương án tối ưu có đánh đổi. Claude không viết/sửa code ứng dụng hoặc triển khai. Hiện chưa có code nên báo cáo chỉ đánh giá thiết kế, không được mô tả là đã review implementation. Coordinator tổng hợp ý kiến và chịu trách nhiệm triển khai sau khi thống nhất thiết kế.
+
 1. Đọc README và tất cả tài liệu hiện có. Phân biệt bằng chứng đã kiểm tra với giả định.
 2. Phản biện UX: người mới và chuyên viên, tìm kiếm/filter/chat dùng chung trạng thái, hỏi vừa đủ, sửa lời khai, nhiều sản phẩm, phiên dài, không kết quả.
 3. Phản biện dữ liệu: hierarchy/context thiếu, nhóm nhiều-nhiều, facet chưa đủ coverage, raw tax, temporal versioning, licensing, alias đa nghĩa, kiểm duyệt AI.
