@@ -18,6 +18,7 @@ test('new queries do not show the previous product rows while waiting for result
   page,
 }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   const box = page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' });
   await box.fill('01.01');
   await expect(page.locator('.code-link').first()).toHaveText('0101.21.00');

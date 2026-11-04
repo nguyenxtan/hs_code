@@ -40,6 +40,7 @@ import { ChapterChips, RankLens } from '@/components/search-filters';
 import Dialog from '@/components/dialog';
 import AssistantPanel from '@/components/assistant-panel';
 import { hasSearchIntent } from '@/lib/search';
+import { resolveTurn } from '@/lib/conversation';
 
 const STORAGE = 'hs-atlas-workspace-v1';
 const factLabels: Record<string, string> = {
@@ -224,6 +225,7 @@ export default function Workspace() {
     [offset, setOffset] = useState(0);
   const [assistantOpen, setAssistantOpen] = useState(false),
     [browse, setBrowse] = useState(false);
+  const [entryMode, setEntryMode] = useState<'assistant' | 'catalog'>('assistant');
   const [storageError, setStorageError] = useState(false),
     [shareWarning, setShareWarning] = useState('');
   const ragRef = useRef<HTMLTextAreaElement>(null);
@@ -273,7 +275,8 @@ export default function Workspace() {
       const tag = (e.target as HTMLElement)?.tagName;
       if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) {
         e.preventDefault();
-        searchRef.current?.focus();
+        setEntryMode('catalog');
+        requestAnimationFrame(() => searchRef.current?.focus({ preventScroll: true }));
       }
     };
     window.addEventListener('keydown', key);
@@ -335,15 +338,36 @@ export default function Workspace() {
   }, [active?.id, active?.messages.length, sending, assistantOpen, tab]);
   function openHelp() {
     if (!showResults && !active?.query && !active?.messages.length) {
-      ragRef.current?.scrollIntoView({ block: 'center', behavior: 'auto' });
-      ragRef.current?.focus({ preventScroll: true });
+      setEntryMode('assistant');
+      requestAnimationFrame(() => {
+        ragRef.current?.scrollIntoView({ block: 'center', behavior: 'auto' });
+        ragRef.current?.focus({ preventScroll: true });
+      });
       return;
     }
     if (!showResults && active?.query) setQ(active.query);
-    if (workspace && active && !active.query.trim() && !active.messages.length && q.trim()) {
-      setWorkspace(
-        updateProduct(workspace, active.id, { query: q.trim(), name: q.trim().slice(0, 80) }),
-      );
+    if (workspace && active && q.trim() && q.trim() !== active.query) {
+      let next = workspace;
+      let target = next.products.find((p) => p.query === q.trim());
+      if (!target) {
+        const empty = !active.query && !active.messages.length && !Object.keys(active.facts).length;
+        if (!empty && resolveTurn(`tìm ${q.trim()}`, active.query).newProduct) {
+          if (next.products.length >= 99) {
+            notify('Đã đạt 99 hồ sơ. Hãy xuất bản sao và dọn hồ sơ trước khi tạo thêm.');
+            return;
+          }
+          next = addProduct(next);
+        }
+        const product = next.products.find((p) => p.id === next.activeId)!;
+        next = updateProduct(next, next.activeId, {
+          query: q.trim(),
+          name: q.trim().slice(0, 80),
+          facts: extractFacts(q.trim(), product.facts),
+        });
+        target = next.products.find((p) => p.id === next.activeId)!;
+      }
+      setWorkspace({ ...next, activeId: target.id });
+      setChat('');
     }
     setTab('chat');
     setAssistantOpen(true);
@@ -430,9 +454,9 @@ export default function Workspace() {
     setChat('');
     let next = workspace;
     let id = active.id;
-    const fresh = message.match(/^(?:giờ tra|chuyển sang|sản phẩm mới[:\s]+)\s*(.+)/i);
+    const turn = resolveTurn(message, startFresh ? '' : active.query);
     if (
-      fresh ||
+      turn.newProduct ||
       (startFresh && (active.query || active.messages.length || Object.keys(active.facts).length))
     ) {
       if (next.products.length >= 99) {
@@ -440,25 +464,16 @@ export default function Workspace() {
         notify('Đã đạt 99 hồ sơ. Hãy xuất bản sao và dọn hồ sơ trước khi tạo thêm.');
         return;
       }
-      next = addProduct(next, (fresh?.[1] || message).slice(0, 80));
+      next = addProduct(next, turn.query.slice(0, 80));
       id = next.activeId;
     }
     const p = next.products.find((x) => x.id === id)!;
     const facts = extractFacts(message, p.facts);
-    const inputQuery = (
-      fresh ? fresh[1] : message.replace(/^(?:tra\s+(?:hs\s+)?|tìm\s+(?:mã\s+)?)/i, '')
-    )
-      .trim()
-      .slice(0, 200);
-    const initialQuery = hasSearchIntent(p.query)
-      ? p.query
-      : hasSearchIntent(inputQuery)
-        ? inputQuery
-        : '';
+    const initialQuery = turn.query;
     next = updateProduct(next, id, {
       query: initialQuery,
       name:
-        p.name === 'Sản phẩm mới' && hasSearchIntent(initialQuery)
+        (p.name === 'Sản phẩm mới' || p.name === p.query) && hasSearchIntent(initialQuery)
           ? initialQuery.slice(0, 80)
           : p.name,
       facts,
@@ -553,7 +568,13 @@ export default function Workspace() {
     typeof window === 'undefined'
       ? ''
       : `${window.location.origin}/?codes=${selected.map((r) => r.code).join(',')}&snapshot=${encodeURIComponent(status?.version || '')}`;
-  const showResults = !!(q.trim() || chapter || category || browse);
+  const showResults = !!(q.trim() || chapter || category || browse || assistantOpen);
+  const lookupDiffers = !!(
+    q.trim() &&
+    active?.query &&
+    q.trim() !== active.query &&
+    !active.focus_code
+  );
   const allFacets = queryPending ? [] : result?.available_facets || result?.facets || [];
   const allCount = allFacets.reduce((n, f) => n + f.count, 0);
   const [profileMenu, setProfileMenu] = useState(false);
@@ -592,7 +613,7 @@ export default function Workspace() {
   }, []);
 
   return (
-    <div className={`app-shell ${showResults ? 'has-results' : 'is-landing'}`}>
+    <div className={`app-shell ${showResults ? 'has-results' : 'is-landing'} entry-${entryMode}`}>
       <div className="main-shell">
         {showResults && (
           <a className="skip-link" href="#lookup-results">
@@ -610,6 +631,30 @@ export default function Workspace() {
             <p>
               Khai báo dần đặc điểm hàng hóa. Trợ lý tra cứu dữ liệu và dẫn nguồn để bạn đối chiếu.
             </p>
+          </div>
+          <div className="entry-modes" aria-label="Cách tra cứu">
+            <button
+              type="button"
+              aria-pressed={entryMode === 'assistant'}
+              onClick={() => {
+                setEntryMode('assistant');
+                requestAnimationFrame(() => ragRef.current?.focus({ preventScroll: true }));
+              }}
+            >
+              <MessageSquare size={16} />
+              Hỏi trợ lý
+            </button>
+            <button
+              type="button"
+              aria-pressed={entryMode === 'catalog'}
+              onClick={() => {
+                setEntryMode('catalog');
+                requestAnimationFrame(() => searchRef.current?.focus({ preventScroll: true }));
+              }}
+            >
+              <Search size={16} />
+              Tra danh mục
+            </button>
           </div>
           <div className="rag-start">
             <form
@@ -664,7 +709,6 @@ export default function Workspace() {
             </div>
           </div>
           <div className="search-box">
-            <span className="quick-label">Tra nhanh</span>
             <Search size={22} />
             <input
               ref={searchRef}
@@ -702,7 +746,10 @@ export default function Workspace() {
               className="help-toggle"
               aria-label="Hỗ trợ tìm mã"
               aria-expanded={assistantOpen}
-              onClick={() => (assistantOpen ? setAssistantOpen(false) : openHelp())}
+              onClick={() =>
+                assistantOpen && !lookupDiffers ? setAssistantOpen(false) : openHelp()
+              }
+              disabled={sending}
             >
               <MessageSquare size={18} />
               <span>Hỏi trợ lý HS</span>
@@ -907,6 +954,16 @@ export default function Workspace() {
                 <X size={16} />
               </button>
             </header>
+            {lookupDiffers && (
+              <div className="lookup-context-note">
+                <span>
+                  Danh mục đang tra: <b>{q}</b>
+                </span>
+                <button className="text-button" disabled={sending} onClick={openHelp}>
+                  Hỏi về mặt hàng này <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
             <div className="profile-toolbar">
               {tab === 'profile' ? (
                 <button className="text-button" onClick={() => setTab('chat')}>

@@ -5,6 +5,7 @@ test('search becomes a compact workbench without losing input focus and shows de
 }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   const input = page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' });
   await input.focus();
   await page.keyboard.type('máy in');
@@ -28,6 +29,7 @@ test('mobile assistant inherits query and returns to the same scroll and opener'
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('máy in');
   await expect(page.locator('.result-row').nth(9)).toBeVisible();
   const first = await page.locator('.result-row').first().boundingBox();
@@ -55,6 +57,7 @@ test('mobile assistant inherits query and returns to the same scroll and opener'
 
 test('detail navigation and compare remain in the lookup flow', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('01.01');
   const code = page.locator('.code-link').first();
   await expect(code).toHaveText(/0101.21.00/);
@@ -92,12 +95,18 @@ test('saved chat remains available without automatically blocking mobile lookup'
     ),
   );
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await expect(page.locator('.assistant-panel')).not.toBeVisible();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('96110000');
   await expect(page.locator('.code-link').first()).toHaveText('9611.00.00');
   await page.getByRole('button', { name: 'Hỗ trợ tìm mã', exact: true }).click();
+  await expect(page.getByText('Đang hỏi về: 96110000', { exact: true })).toBeVisible();
+  await expect(page.locator('.messages')).not.toContainText('Tra con dấu bằng tay');
+  await page.getByRole('button', { name: /^Hồ sơ:/ }).click();
+  await page
+    .getByRole('combobox', { name: 'Sản phẩm đang trao đổi' })
+    .selectOption('saved-product');
   await expect(page.locator('.messages')).toContainText('Tra con dấu bằng tay');
-  await expect(page.getByText('Đang hỏi về: con dấu', { exact: true })).toBeVisible();
 });
 
 test('resizing with code details open keeps the detail dialog above the assistant', async ({
@@ -105,6 +114,7 @@ test('resizing with code details open keeps the detail dialog above the assistan
 }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('01.01');
   await expect(page.locator('.code-link').first()).toHaveText('0101.21.00');
   await page.getByRole('button', { name: 'Hỗ trợ tìm mã', exact: true }).click();
@@ -130,6 +140,7 @@ test('composition state preserves the same search element through the layout tra
   page,
 }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   const input = page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' });
   await input.focus();
   await input.evaluate((e) => e.setAttribute('data-instance', 'same-input'));

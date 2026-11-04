@@ -4,6 +4,7 @@ test('failed lookup can be retried without showing stale rows or losing the quer
   page,
 }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   const input = page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' });
   await input.fill('96110000');
   await expect(page.locator('.code-link').first()).toHaveText('9611.00.00');
@@ -22,6 +23,7 @@ test('a filtered code can be handed to the assistant while retaining the result 
   page,
 }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   const input = page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' });
   await input.fill('con dấu');
   await expect(page.locator('.code-link').first()).toHaveText('9611.00.00');
@@ -90,10 +92,14 @@ test('explicit code discussion keeps lookup chapter but retrieves the chosen cod
     ),
   );
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('01.01');
   await expect(page.locator('.code-link').first()).toHaveText('0101.21.00');
   await page.getByRole('button', { name: /^Chương 01, / }).click();
   await page.getByRole('button', { name: 'Hỗ trợ tìm mã', exact: true }).click();
+  await page.getByRole('button', { name: /^Hồ sơ:/ }).click();
+  await page.getByRole('combobox', { name: 'Sản phẩm đang trao đổi' }).selectOption('stamp');
+  await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('01.01');
   await page.locator('.references button').first().click();
   await page.getByRole('button', { name: 'Hỏi trợ lý về mã này', exact: true }).click();
   await page

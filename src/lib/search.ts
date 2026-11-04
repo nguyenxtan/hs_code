@@ -40,6 +40,18 @@ const stops = new Set([
   'duoc',
   'xin',
 ]);
+// These prefixes identify broad record types, not a particular product.
+const genericPrefixes = new Set([
+  'bo phan',
+  'phu kien',
+  'dung cu',
+  'thiet bi',
+  'san pham',
+  'vat lieu',
+  'hang hoa',
+  'cac loai',
+  'loai khac',
+]);
 export function isGreeting(query: string): boolean {
   const text = query
     .normalize('NFC')
@@ -101,13 +113,24 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
     .map((r) => {
       const text = fold(r.search_text || `${r.description} ${r.description_en}`);
       // search_text is already folded by preparation; keep accents from display text.
-      const typedWords = new Set(
+      const displayWords =
         `${r.code} ${r.description} ${r.description_en}`
           .normalize('NFC')
           .toLocaleLowerCase('vi')
-          .match(/[\p{L}\p{N}]+/gu) || [],
-      );
+          .match(/[\p{L}\p{N}]+/gu) || [];
+      const typedWords = new Set(displayWords);
       const typedMatch = typedTerms.length > 0 && typedTerms.every((t) => typedWords.has(t));
+      const displayPhrase =
+        ' ' + (accented ? displayWords : displayWords.map(fold)).join(' ') + ' ';
+      let prefixLength = 0;
+      for (let n = typedTerms.length - 1; n >= 2; n--) {
+        const prefix = (accented ? typedTerms : terms).slice(0, n).join(' ');
+        if (genericPrefixes.has(fold(prefix))) continue;
+        if (displayPhrase.includes(' ' + prefix + ' ')) {
+          prefixLength = n;
+          break;
+        }
+      }
       let score = 0,
         allTerms = false;
       if (parsed.numeric)
@@ -125,7 +148,7 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
       const boost =
         facts.reduce((n, f) => n + (f && text.includes(f) ? 3 : 0), 0) +
         (categoryMatch(options.category, r.code) ? 35 : 0);
-      return { r, score, boost, allTerms, typedMatch };
+      return { r, score, boost, allTerms, typedMatch, prefixLength };
     })
     .filter((x) => x.score > 0);
   // Prefer a full match to the user's actual accented words when available.
@@ -134,6 +157,12 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
     hits = hits.filter((x) => x.typedMatch);
   else if (!parsed.numeric && terms.length > 1 && hits.some((x) => x.allTerms))
     hits = hits.filter((x) => x.allTerms);
+  else if (!parsed.numeric && terms.length > 2) {
+    // If only part of a detailed description matches, retain the strongest
+    // leading product phrase rather than returning every material-only match.
+    const longest = hits.reduce((n, x) => Math.max(n, x.prefixLength), 0);
+    if (longest >= 2) hits = hits.filter((x) => x.prefixLength === longest);
+  }
   if (!hits.length && !parsed.numeric && terms.length > 0 && parsed.text.length >= 4) {
     hits = records
       .filter(
@@ -147,6 +176,7 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
         boost: 0,
         allTerms: false,
         typedMatch: false,
+        prefixLength: 0,
       }))
       .filter((x) => x.score > 20);
   }

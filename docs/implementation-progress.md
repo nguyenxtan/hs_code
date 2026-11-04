@@ -65,3 +65,10 @@ Plan: docs/superpowers/plans/2026-11-03-hs-code-mvp.md
 - User requested actual use of UI/UX. Completed an interactive headed-Chromium walkthrough on desktop and touch/mobile emulation, including natural descriptions, fact correction/undo, chapter narrowing, comparison, code handoff, and reload/resume. Report: `docs/qa/2026-11-03-ui-walkthrough.md`.
 - Found/fixed natural-language ranking/diacritic confusion, missing fact hints in the lookup pane, stale rows flashing under a new query, excessive extractive text and resumed chat opening above the latest reply. Production-style folded search_text fixtures now prevent false confidence in accented matching.
 - Final checks: 32 unit, 6 data, 33 browser; typecheck/build passed. Actual mobile resume distance from latest reply 0px. Default source extraction still does not provide LLM reasoning; Safari/device keyboard and gold retrieval accuracy remain unverified.
+
+## Conversation and lookup continuity — 04/11/2026
+
+- Reproduced owner report in headed UI: follow-up query locked to old product; empty lookup returned to landing with the panel stranded below the hero.
+- Home now has mutually exclusive assistant/catalog entry, default assistant. Explicit/refined requests update query; questions/fact answers preserve it; different searches isolate sessions. Lookup handoff applies explicit property corrections and exposes a clear switch when chat and catalog differ.
+- Keeping an open assistant in the working layout prevents panel jumps. Refined descriptions retain a substantive leading product phrase rather than material-only noise; generic prefixes do not exclude source candidates.
+- Fresh review and regression fixes complete. Evidence: `docs/qa/2026-11-04-conversation-flow.md`. Latest checks: 49 unit + 6 data + 38 browser = 93 passing; typecheck/build/format/diff checks pass. Headed desktop/mobile sequence, filtering, source details and session restoration inspected.

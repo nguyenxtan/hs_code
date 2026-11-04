@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 test('search, filter, compare and share without product facts', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' })).toBeVisible();
   await expect(page.locator('.assistant-panel')).not.toBeVisible();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('01.01');
@@ -66,6 +67,7 @@ test('conversation facts are corrected, undone and persisted on this browser', a
 test('mobile fits viewport and details explain raw taxes', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('01012100');
   await page.locator('.code-link').first().click();
   await expect(page.getByRole('dialog')).toContainText('Chưa xác định mức áp dụng');

@@ -280,7 +280,7 @@ button svg,
 .landing-heading,
 .landing-options,
 .rag-start,
-.quick-label {
+.entry-modes {
   display: none;
 }
 .is-landing .topbar {
@@ -1789,7 +1789,7 @@ button svg,
   border-top: 1px solid var(--line);
 }
 
-/* The assistant is the primary entry; direct lookup remains available below it. */
+/* Home has one visible input, with the assistant selected by default. */
 .help-toggle {
   background: var(--blue);
   border-color: var(--blue);
@@ -1799,9 +1799,9 @@ button svg,
   background: #1d50b8;
   color: #fff;
 }
-.is-landing .rag-start {
+.is-landing.entry-assistant .rag-start {
   display: block;
-  grid-area: 3/1/4/3;
+  grid-area: 4/1/5/3;
   width: 100%;
   max-width: 720px;
   margin: 0 auto 22px;
@@ -1878,13 +1878,6 @@ button svg,
 .rag-examples button:hover {
   color: var(--blue);
   background: #e2ecff;
-}
-.is-landing .quick-label {
-  display: block;
-  color: #7890ae;
-  font-size: 12px;
-  white-space: nowrap;
-  margin-right: 2px;
 }
 .is-landing .search-box input {
   font-size: 14px;
@@ -2009,5 +2002,70 @@ button svg,
   .error-box {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+.is-landing .entry-modes {
+  display: flex;
+  grid-area: 3/1/4/3;
+  justify-content: center;
+  gap: 4px;
+  margin: 0 auto 18px;
+  padding: 4px;
+  background: #eaf0f8;
+  border-radius: 10px;
+}
+.entry-modes button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 18px;
+  border-radius: 7px;
+  color: #687f9f;
+  font-size: 13px;
+}
+.entry-modes button[aria-pressed='true'] {
+  background: #fff;
+  color: var(--blue);
+  box-shadow: 0 1px 5px #183a6c0c;
+}
+.is-landing.entry-assistant .search-box,
+.is-landing.entry-catalog .rag-start {
+  display: none;
+}
+.is-landing .landing-options {
+  display: flex;
+  justify-content: center;
+}
+.is-landing.entry-assistant .search-hint {
+  display: none;
+}
+.is-landing.entry-catalog .landing-options {
+  justify-content: space-between;
+}
+.lookup-context-note {
+  padding: 10px 16px;
+  background: #f0f5ff;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  display: grid;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.lookup-context-note b {
+  overflow-wrap: anywhere;
+}
+.lookup-context-note button {
+  justify-self: start;
+}
+@media (max-width: 760px) {
+  .is-landing .entry-modes {
+    margin-bottom: 14px;
+  }
+  .is-landing.entry-catalog .landing-options {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

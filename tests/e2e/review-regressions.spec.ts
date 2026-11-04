@@ -60,6 +60,7 @@ test('mobile help is brought into view, typing is undoable as one edit, dialog f
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('01012100');
   const code = page.locator('.code-link').first();
   await code.click();

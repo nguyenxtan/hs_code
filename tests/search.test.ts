@@ -81,6 +81,30 @@ it('retains a product phrase when generic attributes also match unrelated goods'
     '96110000',
   ]);
 });
+it('keeps the leading product phrase when an added material is absent from its HS description', () => {
+  const records = [
+    row('96110000', 'Con dấu ngày, con dấu niêm phong; bộ in bằng tay'),
+    row('71070000', 'Kim loại cơ bản được dát phủ bạc'),
+    row('28444200', 'Các đồng vị phóng xạ và hợp kim'),
+    row('43011000', 'Da nguyên con, có hoặc không có đầu'),
+  ];
+  expect(searchRecords(records, { q: 'con dấu kim loại' }).items.map((r) => r.code)).toEqual([
+    '96110000',
+  ]);
+  expect(searchRecords(records, { q: 'con dau vo kim loai' }).items.map((r) => r.code)).toEqual([
+    '96110000',
+  ]);
+  expect(searchRecords(records, { q: 'kim loại' }).items.map((r) => r.code)).toContain('71070000');
+});
+it('does not narrow candidates on a generic leading phrase such as parts or accessories', () => {
+  const records = [
+    row('84439100', 'Bộ phận và phụ kiện của máy in dùng để in bằng các bộ phận in'),
+    row('84439910', 'Của máy in kiểu lưới dùng để sản xuất tấm mạch in hoặc tấm dây in'),
+  ];
+  expect(searchRecords(records, { q: 'bộ phận máy in lưới' }).items.map((r) => r.code)).toContain(
+    '84439910',
+  );
+});
 it('does not classify a greeting as a product but preserves cookware and product phrases', async () => {
   const { hasSearchIntent } = await import('../src/lib/search');
   expect(hasSearchIntent('chào')).toBe(false);

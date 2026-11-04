@@ -4,6 +4,7 @@ test('chapter toggle narrows results and keeps focus, clearing it preserves quer
   page,
 }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   const input = page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' });
   await input.fill('01.01');
   await expect(page.locator('.code-link').first()).toHaveText('0101.21.00');
@@ -43,6 +44,7 @@ test('chapter picker includes chapter 98 without a separate dataset form and res
 
 test('rank priority changes separately from scope and preserves result count', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('con dấu');
   await expect(page.locator('.code-link').first()).toHaveText('9611.00.00');
   const count = await page.locator('.result-count').innerText();
@@ -64,6 +66,7 @@ test('rank priority changes separately from scope and preserves result count', a
 test('mobile stamp result is fully visible without opening a filter panel', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('con dấu');
   await expect(page.locator('.code-link').first()).toHaveText('9611.00.00');
   const b = await page.locator('.result-row').first().boundingBox();
@@ -73,6 +76,7 @@ test('mobile stamp result is fully visible without opening a filter panel', asyn
 
 test('rank picker allows moving through several options with the keyboard', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tra danh mục', exact: true }).click();
   await page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' }).fill('con dấu');
   await expect(page.locator('.code-link').first()).toHaveText('9611.00.00');
   await page.getByRole('button', { name: 'Xếp trước: Mặc định', exact: true }).click();
