@@ -142,3 +142,70 @@ it('keeps a declared technology soft and rejects instruction words as product no
   expect(parsed?.facts).toEqual({ notes: 'laser' });
   expect(parsed?.core_query).toBe('máy in');
 });
+it.each(['vỏ nhựa, mặt cao su', 'vỏ nhựa mặt cao su'])(
+  'does not swap materials between parts even with a broad evidence quote: %s',
+  (message) => {
+    const parsed = validateTurn(
+      {
+        ...base,
+        fact_ops: [
+          { field: 'body', op: 'set', value: 'cao su', evidence: message },
+          { field: 'face', op: 'set', value: 'nhựa', evidence: message },
+        ],
+      },
+      message,
+      'con dấu',
+      {},
+    );
+    expect(parsed?.facts).toEqual({});
+    const valid = validateTurn(
+      {
+        ...base,
+        fact_ops: [
+          { field: 'body', op: 'set', value: 'nhựa', evidence: message },
+          { field: 'face', op: 'set', value: 'cao su', evidence: message },
+        ],
+      },
+      message,
+      'con dấu',
+      {},
+    );
+    expect(valid?.facts).toEqual({ body: 'nhựa', face: 'cao su' });
+  },
+);
+it.each([
+  ['thêm bộ đệm mực', 'ink', 'tự có mực'],
+  ['là bộ phận thay thế', 'notes', 'thiết bị văn phòng'],
+] as const)('does not treat bộ as a removal command: %s', (message, field, value) => {
+  expect(
+    validateTurn(
+      { ...base, fact_ops: [{ field, op: 'clear', value: '', evidence: message }] },
+      message,
+      'con dấu',
+      { [field]: value },
+    )?.facts,
+  ).toEqual({ [field]: value });
+});
+it('accepts an explicit accented removal command for the named part', () => {
+  expect(
+    validateTurn(
+      { ...base, fact_ops: [{ field: 'body', op: 'clear', value: '', evidence: 'bỏ vỏ nhựa' }] },
+      'bỏ vỏ nhựa',
+      'con dấu',
+      { body: 'nhựa', face: 'cao su' },
+    )?.facts,
+  ).toEqual({ face: 'cao su' });
+});
+it.each(['vỏ nhựa không?', 'vỏ nhựa?'])(
+  'does not let a model turn a short confirmation question into a fact: %s',
+  (message) => {
+    expect(
+      validateTurn(
+        { ...base, fact_ops: [{ field: 'body', op: 'set', value: 'nhựa', evidence: message }] },
+        message,
+        'con dấu',
+        {},
+      )?.facts,
+    ).toEqual({});
+  },
+);

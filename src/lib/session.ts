@@ -93,7 +93,6 @@ export function extractFacts(
   previous: Record<string, string> = {},
 ): Record<string, string> {
   const facts: Record<string, string> = {};
-  if (/[?？]|có phải|đúng không|phải không/i.test(text)) return facts;
   const s = text.toLocaleLowerCase('vi');
   const scan = (field: string, regex: RegExp, value: (m: RegExpMatchArray) => string) => {
     for (const m of s.matchAll(regex)) {
@@ -102,7 +101,14 @@ export function extractFacts(
           .slice(0, m.index)
           .split(/[,;.!?]|\s+(?:mà|nhưng|thay vào đó)\s+/)
           .at(-1) || '';
-      if (/không rõ|chưa biết|không biết/.test(clause)) continue;
+      const rest = s.slice(m.index! + m[0].length);
+      const suffix = rest.split(/[,;.!?？]|\s+(?:mà|nhưng|thay vào đó)\s+/)[0];
+      if (
+        /không rõ|chưa biết|không biết|có phải|liệu/.test(clause) ||
+        /^\s*[?？]/.test(rest) ||
+        /^\s*(?:(?:đúng|phải)\s+)?(?:không|chưa|hả|hay\b)/.test(suffix)
+      )
+        continue;
       const v = value(m),
         negated = /(?:^|\s)(?:không|chẳng|chưa)(?:\s|$)/.test(clause);
       if (negated) {
@@ -180,6 +186,29 @@ export function restoreWorkspace(input: unknown): Workspace | null {
     if (Array.isArray(w.products))
       for (const p of w.products) {
         if (p.revision === undefined) p.revision = 0;
+        const migrateFacts = (v: unknown) => {
+          if (
+            !v ||
+            typeof v !== 'object' ||
+            Array.isArray(v) ||
+            Object.values(v).some((x) => typeof x !== 'string')
+          )
+            return v;
+          const clean: Record<string, string> = {},
+            extra: string[] = [];
+          for (const [k, value] of Object.entries(v)) {
+            if (['body', 'face', 'ink', 'operation', 'notes', 'material_unknown'].includes(k))
+              clean[k] = (value as string).slice(0, 200);
+            else extra.push(`${k}: ${value}`);
+          }
+          if (extra.length)
+            clean.notes = [clean.notes, ...extra].filter(Boolean).join('; ').slice(0, 200);
+          return clean;
+        };
+        p.facts = migrateFacts(p.facts);
+        if (Array.isArray(p.history))
+          for (const h of p.history)
+            if (h && typeof h === 'object') h.facts = migrateFacts(h.facts);
         if (Array.isArray(p.messages))
           p.messages = p.messages.slice(-50).map((m: Record<string, unknown>) => {
             if (!m || typeof m !== 'object') return m;
@@ -188,7 +217,7 @@ export function restoreWorkspace(input: unknown): Workspace | null {
               references: Array.isArray(m.references)
                 ? m.references
                     .filter((r) => r && typeof r.code === 'string' && /^\d{8}$/.test(r.code))
-                    .slice(0, 4)
+                    .slice(0, 10)
                     .map((r) => ({
                       code: r.code,
                       version: typeof r.version === 'string' ? r.version : '',

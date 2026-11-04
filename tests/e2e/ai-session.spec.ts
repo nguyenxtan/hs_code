@@ -108,3 +108,74 @@ test('local-only choice is sent explicitly and survives a reload', async ({ page
   await page.reload();
   await expect(page.getByRole('checkbox', { name: 'Dùng AI khi bắt đầu' })).not.toBeChecked();
 });
+
+test('a high source citation remains openable after reloading the conversation', async ({
+  page,
+  request,
+}) => {
+  const data = await (await request.get('/api/search?q=01')).json();
+  const references = data.items
+    .slice(0, 10)
+    .map((x: { code: string }) => ({ code: x.code, version: data.version }));
+  await page.route('**/api/assistant', (route) =>
+    route.fulfill({ json: { content: 'Đối chiếu nguồn thứ mười [10]', mode: 'llm', references } }),
+  );
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'Mô tả hàng hóa để hỏi trợ lý' }).fill('con dấu');
+  await page.getByRole('button', { name: 'Tra cùng trợ lý', exact: true }).click();
+  await expect(page.locator('.references button')).toHaveCount(10);
+  await page.reload();
+  await page.getByRole('button', { name: 'Hỗ trợ tìm mã', exact: true }).click();
+  await expect(page.locator('.references button')).toHaveCount(10);
+  await page.locator('.references button').nth(9).click();
+  await expect(page.getByRole('dialog', { name: /^Mã / })).toContainText('Dòng nguồn');
+});
+
+test('AI core-query changes hide the prior rows even when the visible description stays the same', async ({
+  page,
+}) => {
+  let releaseAI!: () => void, releaseSearch!: () => void;
+  const aiGate = new Promise<void>((r) => (releaseAI = r)),
+    searchGate = new Promise<void>((r) => (releaseSearch = r));
+  await page.route('**/api/assistant', async (route) => {
+    const body = route.request().postDataJSON();
+    await aiGate;
+    await route.fulfill({
+      json: {
+        content: 'Đang đối chiếu',
+        mode: 'llm',
+        references: [],
+        product_id: body.product_id,
+        base_revision: body.revision,
+        profile_update: {
+          core_query: 'con dấu',
+          facts: { material_unknown: 'kim loại' },
+          new_product: false,
+        },
+      },
+    });
+  });
+  await page.route('**/api/search?**', async (route) => {
+    if (new URL(route.request().url()).searchParams.get('q') === 'con dấu') await searchGate;
+    await route.continue();
+  });
+  await page.goto('/');
+  await page
+    .getByRole('textbox', { name: 'Mô tả hàng hóa để hỏi trợ lý' })
+    .fill('con dấu kim loại');
+  await page.getByRole('button', { name: 'Tra cùng trợ lý', exact: true }).click();
+  try {
+    await expect(page.locator('.code-link').first()).toBeVisible();
+    releaseAI();
+    await expect(page.locator('.message.assistant')).toHaveCount(1);
+    await expect(page.locator('.result-list')).not.toBeVisible();
+    await expect(page.locator('.retrieval-context')).toContainText('con dấu');
+    await expect(page.getByRole('textbox', { name: 'Tìm mã HS hoặc tên hàng' })).toHaveValue(
+      'con dấu kim loại',
+    );
+  } finally {
+    releaseAI();
+    releaseSearch();
+  }
+  await expect(page.locator('.code-link').first()).toBeVisible();
+});

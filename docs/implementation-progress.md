@@ -79,3 +79,10 @@ Plan: docs/superpowers/plans/2026-11-03-hs-code-mvp.md
 - Implemented a single fixed-free provider, quota/breaker controls, structured turn/fact validation, field-aware ranking, revision-guarded session updates, source-owned code rendering, clarification-only answers, local-only option and deterministic no-network browser tests.
 - Live samples uncovered issues beyond JSON format; captured-output regressions now guard ambiguous material, instruction words incorrectly stored as facts, overly restrictive core query and repeated questions. Source data and legal-tax validation remain incomplete; no classification guarantee.
 - Implementation remains on feat/openrouter-conversation pending Claude final code cross-review and final verification/integration. See the corresponding plan ledger and forthcoming QA evidence; do not treat interim live pass counts as a full accuracy benchmark.
+
+
+## OpenRouter release verification and integration
+
+- Claude final code review completed: no Critical, four Important findings corrected with failing-then-passing regressions. Source association, clear-command accents, high citation persistence and mixed declaration/question handling fixed. Clarification retains source links; lookup pending state covers AI core changes; legacy facts migrate safely.
+- Latest checks:106 unit +6 data +43 browser=155 passing; typecheck, production build, formatting/diff checks pass. Synthetic live7/7 steps with7 valid JSON calls; no claim of broad HS accuracy. Headed desktop/mobile source persistence/opening verified with real AI.
+- Fixed free OpenRouter provider active locally on3100 via ignored server configuration, with local-only choice and quota/error fallback. Key not committed; all worker reviews advisory only. No paid fallback. Main integration/push follows these verified commits.

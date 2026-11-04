@@ -22,4 +22,17 @@ Other advice applied: longer config-error breakers, repeated invalid-output brea
 
 ## Final code review
 
-Pending: Claude will inspect the complete branch, including contract/service/client, test isolation and latest real-model findings. This document does not claim that final review has passed.
+Claude reviewed dcabdfd and reported no Critical issue, four verified Important defects, and one UX decision. The coordinator reproduced and fixed the defects with regressions:
+
+1. Broad evidence could swap body/face materials. Named-part association now must match the declared value, including clauses without commas.
+2. Folding “bộ” to “bo” could activate clear. Explicit removal uses the original accented command, while negation still checks the current value.
+3. References5–10 were lost during storage. Persistence now keeps the same ten-reference ceiling as server generation; unit and browser reload/source-open cases cover the highest citation.
+4. A question mark discarded all rule facts. Parsing now distinguishes declared clauses from confirmation/uncertainty clauses, preserving “vỏ nhựa, mặt cao su thì mã nào?”.
+
+UX ruling under the owner's delegated scope: clarification remains short but includes a candidate count and source buttons. The question itself does not require a fabricated citation. A real AI/browser replay confirmed sources remain openable after reload.
+
+Additional local fixes: compare fact dictionaries independent of key order to avoid a redundant second call; track search pending state by full request/core/facts/scope while retaining stable chapter controls; display the shorter retrieval query explicitly; migrate legacy custom fields into bounded notes so API validation does not lock a saved session.
+
+No additional Claude re-review of the coordinator fixes is claimed. Targeted regressions were observed failing then passing, followed by full verification:106 unit +6 data +43 browser=155 passing, build/typecheck/format/diff checks passing. Latest synthetic live replay7/7 checked steps,7 usable JSON calls. Details in QA.
+
+Minor items left scoped as limitations: a theoretical same-tick workspaceRef/non-functional state-write window was not reproduced; tested edit/undo/switch/delete flows are guarded by product revision. Filters remain shared explicit UI state across products and show no-result scope notices. Unknown-part material can remain unresolved until clarified/edited. Local opt-in defaults follow the owner's explicit server configuration; per-process budgets and lexical-gated embeddings remain prototype constraints.

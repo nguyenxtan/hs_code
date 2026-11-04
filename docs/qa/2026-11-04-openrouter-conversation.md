@@ -59,3 +59,12 @@ Screenshots ignored locally: .cache/openrouter-desktop.png, openrouter-mobile.pn
 ## Limits
 
 Free model can still misunderstand, omit information, ask poor questions or return unsupported content. Current guards reject known failure classes; they do not prove arbitrary claims true. Parent descriptions/legal sources remain incomplete, VAT stays separate from raw source strings, and retrieval needs a larger independent gold set before claiming improved recall/precision across sectors. Local budget is per process, not a distributed production limiter; upstream quota is authoritative.
+
+
+## Post-review release verification
+
+Claude found no Critical defect in dcabdfd, and four Important issues were reproduced then fixed: body/face evidence pairing, removal-command accent collision, citations5–10 after reload, and declared facts in questions. Clarification now keeps a compact source/candidate footer. Extra guards cover short confirmation questions, irrelevant key order changes, legacy custom facts and stale core-query result rows.
+
+Latest release checks: **106 unit +6 data +43 browser=155 passing**. Production build, sequential typecheck, Prettier and git diff checks passed. Separate browser server remained remote-disabled throughout. Full latest synthetic live replay passed7/7,7/7 usable JSON calls (one turn used two; VAT used zero); observed model-call p50=1518ms,p95=2184ms, calls/turn1.0 in this sample. This supersedes earlier checkpoint counts without erasing the documented failures.
+
+Headed desktop/mobile source test: one reference retained before/after reload, source detail opened on both viewports, mobile composer y693.5,height90; no overflow or observed JS errors. First driver attempt pressed Escape before the async source load completed; rerun waited for actual dialog visibility before closing and restoring the assistant. This was a driver-ordering correction, not a claimed app fix. High citation10 reload/source opening is separately covered by browser regression. Final ignored screenshots: .cache/openrouter-reviewed-desktop.png, .cache/openrouter-reviewed-mobile.png.

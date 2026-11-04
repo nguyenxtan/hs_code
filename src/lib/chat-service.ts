@@ -102,7 +102,9 @@ export async function answerChat(
       if (parsed) {
         interpretation_mode = 'llm';
         const changed =
-          parsed.core_query !== query || JSON.stringify(parsed.facts) !== JSON.stringify(facts);
+          parsed.core_query !== query ||
+          Object.keys(parsed.facts).length !== Object.keys(facts).length ||
+          Object.entries(parsed.facts).some(([key, value]) => facts[key] !== value);
         const newProduct = parsed.intent === 'new' && !r.client_new && !!r.previous_query;
         query = newProduct ? parsed.core_query : r.focus_code || parsed.core_query;
         facts = parsed.facts;
@@ -161,7 +163,13 @@ export async function answerChat(
   let content = explanation
     ? `${explanation}\n\nĐây là gợi ý đối chiếu theo nguồn, chưa phải kết luận mã.`
     : fallback.content;
-  if (clarification) content = explanation ? content + `\n\n${clarification}` : clarification;
+  if (clarification)
+    content = explanation
+      ? content + `\n\n${clarification}`
+      : clarification +
+        (items.length
+          ? `\n\n${items.length} mã tham khảo đang được đối chiếu. Mở nguồn bên dưới để xem chi tiết.`
+          : '');
   if (isGreeting(r.message))
     content =
       'Bạn muốn tra mặt hàng nào? Hãy nhập tên hàng, công dụng hoặc mã HS dự kiến để bắt đầu.';
@@ -174,12 +182,11 @@ export async function answerChat(
     mode: explanation || clarification ? 'llm' : 'extractive',
     interpretation_mode,
     candidate_codes: result.items.map((x) => x.code),
-    references:
-      isGreeting(r.message) || (clarification && !explanation)
-        ? []
-        : result.items
-            .slice(0, explanation ? 10 : 4)
-            .map((x) => ({ code: x.code, version: snapshot.version })),
+    references: isGreeting(r.message)
+      ? []
+      : result.items
+          .slice(0, explanation ? 10 : 4)
+          .map((x) => ({ code: x.code, version: snapshot.version })),
     version: snapshot.version,
     retrieval_mode: result.mode,
     retrieval_query: query,

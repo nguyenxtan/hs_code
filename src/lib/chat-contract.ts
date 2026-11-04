@@ -188,9 +188,20 @@ export function validateTurn(
         .split(/[,;.!?]|\s+(?:ma|nhung|thay vao do)\s+/)
         .at(-1) || '';
     const ev = fold(evidence);
+    const rest = s.slice(start + evidence.length);
+    const suffix = fold(rest.split(/[,;.!?？]/)[0]);
+    const escapedValue = fold(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (
+      /^\s*[?？]/.test(rest) ||
+      /^(?:(?:dung|phai)\s+)?(?:khong|chua|ha|hay)\b/.test(suffix) ||
+      /\b(?:khong|chua|ha)\s*[?？]?$/.test(ev) ||
+      (value && new RegExp(`${escapedValue}\\s*[?？]$`).test(ev)) ||
+      (x.op === 'clear' && /[?？]$/.test(evidence))
+    )
+      continue;
     const negated = /(?:^|\s)(?:khong|chang|chua)(?:\s|$)/.test(clause);
     if (x.op === 'clear') {
-      const explicitRemoval = /\b(?:bo|xoa)\b/.test(ev);
+      const explicitRemoval = /(?:^|\s)(?:bỏ|xóa|xoá)(?:\s|$)/.test(evidence);
       const negatesCurrentValue = negated && !!facts[field] && ev.includes(fold(facts[field]));
       if ((explicitRemoval || negatesCurrentValue) && (!part || part.test(ev))) delete facts[field];
       continue;
@@ -199,7 +210,15 @@ export function validateTurn(
       continue;
     const mapped = extractFacts(evidence);
     if (!fold(evidence).includes(fold(value)) && mapped[field] !== value) continue;
-    if ((field === 'body' || field === 'face') && !part!.test(ev)) field = 'material_unknown';
+    if (field === 'body' || field === 'face') {
+      if (!part!.test(ev)) field = 'material_unknown';
+      else {
+        const associated = new RegExp(
+          `${part!.source}\\s+(?:(?:bang|la|lam tu|duoc lam tu)\\s+)?${escapedValue}(?:\\b|$)`,
+        );
+        if (mapped[field] !== value && !associated.test(ev)) continue;
+      }
+    }
     if ((field === 'ink' || field === 'operation') && !part!.test(ev)) continue;
     facts[field] = value;
   }

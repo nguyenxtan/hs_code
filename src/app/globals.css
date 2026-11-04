@@ -2104,3 +2104,13 @@ button svg,
   accent-color: var(--blue);
   flex-shrink: 0;
 }
+.retrieval-context {
+  color: #71839b;
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0 0 9px;
+}
+.retrieval-context b {
+  font-weight: 500;
+  color: #536f94;
+}

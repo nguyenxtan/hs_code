@@ -36,8 +36,9 @@ it('uses structured intent/facts, retrieves again after a patch and allows pure 
   expect(out.content).toContain('bằng tay');
   expect(out.base_revision).toBe(1);
   expect(model).toHaveBeenCalledTimes(1);
-  expect(out.content).toBe('Sản phẩm được sử dụng bằng tay hay gắn vào máy?');
-  expect(out.references).toEqual([]);
+  expect(out.content).toContain('Sản phẩm được sử dụng bằng tay hay gắn vào máy?');
+  expect(out.content).toContain('mã tham khảo');
+  expect(out.references.map((x) => x.code)).toEqual(['96110000']);
   expect(out.candidate_codes).toContain('96110000');
 });
 it('does not use the network for tax, greetings, numeric lookup or local-only mode', async () => {
@@ -90,4 +91,31 @@ it('discards earlier explanations when the model changes product and clears earl
   expect(out.content).not.toContain('Cũ');
   expect(out.candidate_codes[0]).toBe('84431200');
   expect(model.mock.calls.length).toBeLessThanOrEqual(2);
+});
+
+it('does not spend a second call for the same facts in a different key order', async () => {
+  const model = vi.fn().mockResolvedValue({
+    ok: true,
+    data: {
+      ...turn,
+      clarification: '',
+      fact_ops: [
+        { field: 'body', op: 'clear', value: '', evidence: 'bỏ vỏ nhựa' },
+        { field: 'body', op: 'set', value: 'nhựa', evidence: 'ghi lại vỏ nhựa' },
+      ],
+    },
+  });
+  const out = await answerChat(
+    snapshot,
+    {
+      ...request,
+      query: 'con dấu',
+      core_query: 'con dấu',
+      message: 'bỏ vỏ nhựa, ghi lại vỏ nhựa',
+      facts: { body: 'nhựa', face: 'cao su' },
+    },
+    { model },
+  );
+  expect(out.profile_update?.facts).toEqual({ body: 'nhựa', face: 'cao su' });
+  expect(model).toHaveBeenCalledTimes(1);
 });

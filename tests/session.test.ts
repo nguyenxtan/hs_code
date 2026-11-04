@@ -130,3 +130,11 @@ it('records a declared material without inventing the part', () => {
   expect(extractFacts('con dấu kim loại')).toEqual({ material_unknown: 'kim loại' });
   expect(extractFacts('không biết có phải kim loại không?')).toEqual({});
 });
+it.each([
+  ['vỏ nhựa, mặt cao su thì mã nào?', { body: 'nhựa', face: 'cao su' }],
+  ['vỏ nhựa, có phải mặt cao su không?', { body: 'nhựa' }],
+  ['vỏ nhựa hay kim loại?', {}],
+  ['vỏ nhựa?', {}],
+] as const)('keeps declared clauses while excluding uncertain clauses: %s', (message, want) => {
+  expect(extractFacts(message)).toEqual(want);
+});

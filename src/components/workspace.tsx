@@ -207,7 +207,7 @@ export default function Workspace() {
     [loading, setLoading] = useState(true),
     [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
-  const [resultQuery, setResultQuery] = useState<string | null>(null);
+  const [resultQuery, setResultQuery] = useState<{ key: string; input: string } | null>(null);
   const [status, setStatus] = useState<{
     count: number;
     main: number;
@@ -243,7 +243,10 @@ export default function Workspace() {
     workspace?.products.find((p) => p.id === workspace.activeId) || workspace?.products[0];
   const factKey = JSON.stringify(active?.query === q ? active.facts : {});
   const retrievalQuery = active?.query === q ? active.core_query || q : q;
-  const queryPending = resultQuery !== q;
+  const inputKey = JSON.stringify([q, retrievalQuery]);
+  const requestKey = JSON.stringify([inputKey, chapter, category, offset, factKey]);
+  const queryPending = resultQuery?.key !== requestKey;
+  const facetsPending = resultQuery?.input !== inputKey;
 
   useEffect(() => {
     if (window.innerWidth > 760) ragRef.current?.focus({ preventScroll: true });
@@ -323,7 +326,7 @@ export default function Workspace() {
             .catch(() => ({ error: 'Chưa đọc được phản hồi. Vui lòng thử lại.' }));
           if (!r.ok || v.error) throw Error(v.error);
           setResult(v);
-          setResultQuery(q);
+          setResultQuery({ key: requestKey, input: inputKey });
         })
         .catch((e) => {
           if (e.name !== 'AbortError')
@@ -617,7 +620,7 @@ export default function Workspace() {
     q.trim() !== active.query &&
     !active.focus_code
   );
-  const allFacets = queryPending ? [] : result?.available_facets || result?.facets || [];
+  const allFacets = facetsPending ? [] : result?.available_facets || result?.facets || [];
   const allCount = allFacets.reduce((n, f) => n + f.count, 0);
   const [profileMenu, setProfileMenu] = useState(false);
   useEffect(() => {
@@ -860,7 +863,12 @@ export default function Workspace() {
                   </div>
                   <RankLens category={category} onChange={setCategory} />
                 </div>
-                {!queryPending && (
+                {active?.query === q && retrievalQuery !== q && (
+                  <div className="retrieval-context">
+                    Đang tra: <b>{retrievalQuery}</b> · Lời khai chỉ giúp xếp hạng.
+                  </div>
+                )}
+                {!facetsPending && (
                   <ChapterChips
                     chapter={chapter}
                     facets={allFacets}
