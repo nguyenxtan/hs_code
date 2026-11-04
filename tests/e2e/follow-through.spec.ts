@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test('failed lookup can be retried without showing stale rows or losing the query', async ({
   page,

@@ -32,7 +32,11 @@ Giới hạn dev: vectors nằm file runtime, tìm cosine ở app; chưa cần A
 
 Mặc định là trợ lý trích xuất: tìm dòng mã theo hồ sơ, trả references, báo thiếu chú giải. Có thể khai dần các thuộc tính được hỗ trợ, sửa/undo; không giả lập việc đã gọi LLM.
 
-Để bật diễn giải LLM, cấu hình `HS_CHAT_MODEL`, `HS_CHAT_BASE_URL` và `HS_CHAT_API_KEY` (hoặc `OPENAI_API_KEY`) phía server. Local endpoint localhost tương thích Chat Completions có thể không cần key. Không có model hoặc provider lỗi thì giữ chế độ trích xuất. Chat không được tự chốt VAT. Mã/số %/citation được hậu kiểm cú pháp; đây không phải xác minh tự động mọi nhận định pháp lý.
+Để bật trợ lý OpenRouter, đặt `OPENROUTER_API_KEY` và `HS_CHAT_ENABLED=true` trong `.env.local` phía server rồi restart. Model hiện được ghim vào `nvidia/nemotron-3.5-super-vl:free`; mặc định không bật chỉ vì có key. `HS_CHAT_DAILY_LIMIT` mặc định 200 lần gọi/ngày UTC (07:00 giờ Việt Nam), giới hạn theo process; upstream `/key` vẫn là nguồn quota chính. Không có fallback trả phí. Đường adapter OpenAI-compatible cũ đã được thay bằng một provider duy nhất có allowlist, kiểm tra model/chi phí phản hồi, quota, timeout và circuit breaker.
+
+AI chỉ chạy khi gửi hội thoại và người dùng bật lựa chọn AI; tra mã số, filter/browse và phản hồi thuế dùng đường nội bộ. Trang đầu và chat có nút chọn nội bộ; lựa chọn lưu tại trình duyệt. Mô tả/hồ sơ đang tra và tối đa sáu tin nhắn gần nhất được gửi qua OpenRouter; endpoint miễn phí NVIDIA có ghi log, nên chỉ dùng dữ liệu công khai/không mật. Session vẫn do ứng dụng lưu, không dùng memory của provider. JSON đúng schema không bảo đảm đúng ngữ nghĩa: kiểm tra evidence của lời khai, nguồn trích dẫn và giới hạn thuế vẫn cần thiết.
+
+Playwright dùng server riêng `127.0.0.1:3131`, ép `HS_CHAT_ENABLED=false`, không tái sử dụng server đang bật AI. Mỗi ca xác nhận `/api/status` remote off. `npx tsx scripts/eval-chat.ts` là đánh giá live riêng, dữ liệu tổng hợp, giới hạn 15 call/process; cần chủ động bật cấu hình server. Kết quả nằm trong `.cache/eval` (gitignored), không chứa key. Các chỉ số là smoke test, chưa phải benchmark HS đa ngành.
 
 Quota đăng nhập Codex không được dùng thay project API key. Theo [OpenAI API credits](https://developers.openai.com/api/docs/guides/chatgpt-api-credits), một số gói ChatGPT đủ điều kiện có thể nhận API credits riêng sau khi liên kết tổ chức. Chưa kiểm tra eligibility/balance tài khoản của chủ dự án. Dự án không đọc auth.json hay chuyển OAuth token sang API.
 

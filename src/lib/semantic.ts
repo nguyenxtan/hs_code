@@ -68,7 +68,10 @@ export async function hybridSearch(
         });
     const index = await indexCache!;
     if (index.version !== snapshot.version) throw Error('Embedding snapshot mismatch');
-    const semanticQuery = [options.q, ...(options.facts || [])].join(' ');
+    const semanticQuery = [
+      options.q,
+      ...Object.entries(options.facts || {}).map(([field, value]) => `${field}: ${value}`),
+    ].join(' ');
     const embed = await embeddingExtractor(index.model);
     const [vector] = (
       await embed(['query: ' + semanticQuery], { pooling: 'mean', normalize: true })

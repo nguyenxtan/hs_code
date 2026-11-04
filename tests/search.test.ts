@@ -125,3 +125,12 @@ it('uses accents to avoid treating con dấu as còn/đầu when a full typed ma
   expect(r.items.map((x) => x.code)).toEqual(['96110000']);
   expect(searchRecords(rows, { q: 'ngua thuan' }).items[0].code).toBe('01012100');
 });
+it('keeps named body/face materials distinct when ranking without excluding candidates', () => {
+  const records = [
+    row('11111111', 'Vỏ nhựa, mặt kim loại'),
+    row('22222222', 'Vỏ kim loại, mặt nhựa'),
+  ];
+  const r = searchRecords(records, { q: '', facts: { body: 'kim loại', face: 'nhựa' } });
+  expect(r.items[0].code).toBe('22222222');
+  expect(r.total).toBe(2);
+});

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { chatProvider } from '@/lib/chat-provider';
 import { loadSnapshot } from '@/lib/db';
 export async function GET() {
   try {
@@ -12,7 +13,8 @@ export async function GET() {
       chapters: new Set(s.records.map((r) => r.chapter)).size,
       context_complete: s.context_complete,
       attribution: s.attribution,
-      chat: process.env.HS_CHAT_MODEL ? 'configured' : 'extractive',
+      chat: chatProvider().status().enabled ? 'configured' : 'extractive',
+      ai: chatProvider().status(),
       audit: s.audit,
     });
   } catch {

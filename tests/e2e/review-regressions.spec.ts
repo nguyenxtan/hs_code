@@ -1,9 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 test('assistant accepts the browser origin and rejects another host', async ({ request }) => {
   const data = { message: 'con dấu', query: 'con dấu', facts: {} };
   const same = await request.post('/api/assistant', {
     data,
-    headers: { Origin: 'http://127.0.0.1:3100' },
+    headers: { Origin: 'http://127.0.0.1:3131' },
   });
   expect(same.status()).toBe(200);
   expect((await same.json()).references[0].code).toBe('96110000');

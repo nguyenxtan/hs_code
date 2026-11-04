@@ -85,6 +85,26 @@ function queryTerms(query: string, accented = false): string[] {
 export function queryPhrase(query: string): string {
   return queryTerms(query).join(' ');
 }
+export function validFacts(v: unknown): v is string[] | Record<string, string> {
+  if (!v || typeof v !== 'object' || Object.keys(v).length > 20) return false;
+  if (
+    !Array.isArray(v) &&
+    Object.keys(v).some(
+      (k) => !['body', 'face', 'operation', 'ink', 'notes', 'material_unknown'].includes(k),
+    )
+  )
+    return false;
+  return Object.values(v).every((x) => typeof x === 'string' && x.length <= 200);
+}
+function factBoost(text: string, field: string, value: string): number {
+  const f = fold(value);
+  if (!f || !text.includes(f)) return 0;
+  const cue =
+    field === 'body' ? /(?:vo|than|khung|tay cam)/ : field === 'face' ? /(?:mat|dau dau)/ : null;
+  if (cue)
+    return text.split(/[,;.!?]/).some((clause) => cue.test(clause) && clause.includes(f)) ? 4 : 0;
+  return field === 'notes' || field === 'material_unknown' ? 1 : 3;
+}
 function grams(s: string): Set<string> {
   const v = new Set<string>();
   for (let i = 0; i < s.length - 2; i++) v.add(s.slice(i, i + 3));
@@ -103,7 +123,7 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
   const typedTerms = queryTerms(options.q || '', true);
   const accented = /[\p{M}đĐ]/u.test((options.q || '').normalize('NFD'));
   const phrase = terms.join(' ');
-  const facts = (options.facts ?? []).map(fold);
+  const facts = Object.entries(options.facts ?? {});
   let hits = records
     .filter(
       (r) =>
@@ -146,7 +166,7 @@ export function searchRecords(records: HSRecord[], options: SearchOptions): Sear
         if (matched) score = (matched / terms.length) * 100 + (text.includes(phrase) ? 50 : 0);
       }
       const boost =
-        facts.reduce((n, f) => n + (f && text.includes(f) ? 3 : 0), 0) +
+        facts.reduce((n, [field, value]) => n + factBoost(text, field, value), 0) +
         (categoryMatch(options.category, r.code) ? 35 : 0);
       return { r, score, boost, allTerms, typedMatch, prefixLength };
     })

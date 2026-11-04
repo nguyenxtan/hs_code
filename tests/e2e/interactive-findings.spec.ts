@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test('natural description returns stamps rather than fur and shrimp in both panes', async ({
   page,
@@ -60,7 +60,11 @@ test('declared facts feed the lookup request and chat without applying exclusion
     .fill('Bằng tay, vỏ nhựa, mặt cao su');
   await page.getByRole('button', { name: 'Gửi mô tả', exact: true }).click();
   const request = await next;
-  expect(JSON.parse(request.postData()!).facts).toEqual(['bằng tay', 'nhựa', 'cao su']);
+  expect(JSON.parse(request.postData()!).facts).toEqual({
+    operation: 'bằng tay',
+    body: 'nhựa',
+    face: 'cao su',
+  });
   await expect(page.locator('.thinking')).toHaveCount(0);
   await expect(page.locator('.code-link').first()).toHaveText('9611.00.00');
   await expect(
@@ -74,7 +78,7 @@ test('ranking hints are bounded and do not remove lookup candidates', async ({ r
     await request.post('/api/search?q=con%20dau', { data: { facts: ['bằng tay', 'nhựa'] } })
   ).json();
   expect(ranked.total).toBe(before.total);
-  for (const facts of [{ body: 'nhựa' }, [42], ['x'.repeat(201)]]) {
+  for (const facts of [{ wrong: 'nhựa' }, [42], ['x'.repeat(201)]]) {
     expect((await request.post('/api/search?q=con%20dau', { data: { facts } })).status()).toBe(400);
   }
 });

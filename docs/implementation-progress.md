@@ -72,3 +72,10 @@ Plan: docs/superpowers/plans/2026-11-03-hs-code-mvp.md
 - Home now has mutually exclusive assistant/catalog entry, default assistant. Explicit/refined requests update query; questions/fact answers preserve it; different searches isolate sessions. Lookup handoff applies explicit property corrections and exposes a clear switch when chat and catalog differ.
 - Keeping an open assistant in the working layout prevents panel jumps. Refined descriptions retain a substantive leading product phrase rather than material-only noise; generic prefixes do not exclude source candidates.
 - Fresh review and regression fixes complete. Evidence: `docs/qa/2026-11-04-conversation-flow.md`. Latest checks: 49 unit + 6 data + 38 browser = 93 passing; typecheck/build/format/diff checks pass. Headed desktop/mobile sequence, filtering, source details and session restoration inspected.
+
+## OpenRouter conversation implementation — in final code review
+
+- Owner's server-local OpenRouter key verified without printing it. Actual free quota tier1000/day; single strict-JSON connectivity probe cost0. Key alone did not enable old code; new integration requires explicit HS_CHAT_ENABLED=true.
+- Implemented a single fixed-free provider, quota/breaker controls, structured turn/fact validation, field-aware ranking, revision-guarded session updates, source-owned code rendering, clarification-only answers, local-only option and deterministic no-network browser tests.
+- Live samples uncovered issues beyond JSON format; captured-output regressions now guard ambiguous material, instruction words incorrectly stored as facts, overly restrictive core query and repeated questions. Source data and legal-tax validation remain incomplete; no classification guarantee.
+- Implementation remains on feat/openrouter-conversation pending Claude final code cross-review and final verification/integration. See the corresponding plan ledger and forthcoming QA evidence; do not treat interim live pass counts as a full accuracy benchmark.

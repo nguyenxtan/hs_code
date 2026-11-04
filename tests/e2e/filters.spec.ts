@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test('chapter toggle narrows results and keeps focus, clearing it preserves query', async ({
   page,

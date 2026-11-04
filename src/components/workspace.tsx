@@ -35,6 +35,7 @@ import {
   extractFacts,
   restoreWorkspace,
   serializeWorkspace,
+  finishAssistantTurn,
 } from '@/lib/session';
 import { ChapterChips, RankLens } from '@/components/search-filters';
 import Dialog from '@/components/dialog';
@@ -48,6 +49,7 @@ const factLabels: Record<string, string> = {
   operation: 'Vận hành',
   body: 'Vật liệu vỏ',
   face: 'Vật liệu mặt',
+  material_unknown: 'Vật liệu chưa rõ bộ phận',
 };
 const num = (n: number) => n.toLocaleString('vi-VN');
 function displayCode(code: string) {
@@ -194,6 +196,9 @@ function RecordDetails({
 
 export default function Workspace() {
   const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
+  const workspaceRef = useRef(workspace);
+  workspaceRef.current = workspace;
+  const [useAI, setUseAI] = useState(true);
   const [q, setQ] = useState(''),
     [chapter, setChapter] = useState(''),
     [category, setCategory] = useState('');
@@ -211,6 +216,7 @@ export default function Workspace() {
     version: string;
     date: string;
     chat: string;
+    ai?: { enabled: boolean; model: string | null; provider: string | null };
   } | null>(null);
   const [selected, setSelected] = useState<HSRecord[]>([]),
     [detail, setDetail] = useState<HSRecord | null>(null);
@@ -235,12 +241,14 @@ export default function Workspace() {
     messagesRef = useRef<HTMLDivElement>(null);
   const active =
     workspace?.products.find((p) => p.id === workspace.activeId) || workspace?.products[0];
-  const factKey = JSON.stringify(active?.query === q ? Object.values(active.facts) : []);
+  const factKey = JSON.stringify(active?.query === q ? active.facts : {});
+  const retrievalQuery = active?.query === q ? active.core_query || q : q;
   const queryPending = resultQuery !== q;
 
   useEffect(() => {
     if (window.innerWidth > 760) ragRef.current?.focus({ preventScroll: true });
     try {
+      setUseAI(localStorage.getItem('hs-atlas-use-ai') !== 'false');
       const raw = localStorage.getItem(STORAGE);
       const data = raw ? JSON.parse(raw) : null;
       const saved = restoreWorkspace(data) || createWorkspace();
@@ -292,10 +300,16 @@ export default function Workspace() {
     const timer = setTimeout(() => {
       setLoading(true);
       setError('');
-      const params = new URLSearchParams({ q, chapter, dataset, category, offset: String(offset) });
+      const params = new URLSearchParams({
+        q: retrievalQuery,
+        chapter,
+        dataset,
+        category,
+        offset: String(offset),
+      });
       fetch('/api/search?' + params, {
         signal: controller.signal,
-        ...(factKey !== '[]'
+        ...(factKey !== '{}'
           ? {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -327,7 +341,7 @@ export default function Workspace() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [q, chapter, dataset, category, offset, composing, retry, factKey]);
+  }, [q, retrievalQuery, chapter, dataset, category, offset, composing, retry, factKey]);
   useEffect(() => {
     if (!assistantOpen || tab !== 'chat') return;
     const frame = requestAnimationFrame(() => {
@@ -468,23 +482,35 @@ export default function Workspace() {
       id = next.activeId;
     }
     const p = next.products.find((x) => x.id === id)!;
+    const before = p;
+    const turnToken = crypto.randomUUID();
+    const turnId = crypto.randomUUID();
     const facts = extractFacts(message, p.facts);
     const initialQuery = turn.query;
-    next = updateProduct(next, id, {
-      query: initialQuery,
-      name:
-        (p.name === 'Sản phẩm mới' || p.name === p.query) && hasSearchIntent(initialQuery)
-          ? initialQuery.slice(0, 80)
-          : p.name,
-      facts,
-    });
+    next = updateProduct(
+      next,
+      id,
+      {
+        query: initialQuery,
+        name:
+          (p.name === 'Sản phẩm mới' || p.name === p.query) && hasSearchIntent(initialQuery)
+            ? initialQuery.slice(0, 80)
+            : p.name,
+        facts,
+      },
+      turnToken,
+    );
     next = {
       ...next,
       products: next.products.map((x) =>
         x.id === id
           ? {
               ...x,
-              messages: [...x.messages.slice(-49), { role: 'user' as const, content: message }],
+              revision: x.revision + 1,
+              messages: [
+                ...x.messages.slice(-49),
+                { id: turnId, role: 'user' as const, content: message },
+              ],
             }
           : x,
       ),
@@ -509,6 +535,13 @@ export default function Workspace() {
           message,
           query: target.focus_code || target.query,
           facts: target.facts,
+          core_query: target.core_query,
+          previous_query: before.query,
+          focus_code: target.focus_code,
+          product_id: id,
+          revision: target.revision,
+          client_new: id !== active.id || startFresh,
+          use_ai: useAI && status?.ai?.enabled === true,
           filters: { chapter: target.focus_code ? '' : chapter, dataset, category },
           history: target.messages
             .slice(0, -1)
@@ -526,16 +559,25 @@ export default function Workspace() {
         references: data.references,
         mode: data.mode,
       };
-      setWorkspace((w) =>
-        w
-          ? {
-              ...w,
-              products: w.products.map((x) =>
-                x.id === id ? { ...x, messages: [...x.messages.slice(-49), reply] } : x,
-              ),
-            }
-          : w,
-      );
+      const current = workspaceRef.current;
+      if (current) {
+        const outcome = finishAssistantTurn(
+          current,
+          { id, revision: target.revision, turnId, before, editToken: turnToken },
+          data.product_id === id && data.base_revision === target.revision
+            ? data.profile_update
+            : undefined,
+          reply,
+        );
+        workspaceRef.current = outcome.workspace;
+        setWorkspace(outcome.workspace);
+        if (!outcome.stale && outcome.workspace.activeId !== current.activeId) {
+          setQ(
+            outcome.workspace.products.find((p) => p.id === outcome.workspace.activeId)?.query ||
+              '',
+          );
+        }
+      }
       if (data.notice) notify(data.notice);
     } catch (e) {
       setWorkspace((w) =>
@@ -692,6 +734,22 @@ export default function Workspace() {
                   Tra cùng trợ lý <ArrowUpRight size={17} />
                 </button>
               </div>
+              {status?.ai?.enabled && (
+                <label className="rag-ai-choice">
+                  <input
+                    type="checkbox"
+                    aria-label="Dùng AI khi bắt đầu"
+                    checked={useAI}
+                    onChange={(e) => {
+                      setUseAI(e.target.checked);
+                      try {
+                        localStorage.setItem('hs-atlas-use-ai', String(e.target.checked));
+                      } catch {}
+                    }}
+                  />
+                  AI qua OpenRouter · mô tả gửi tới nhà cung cấp có ghi log
+                </label>
+              )}
             </form>
             <div className="rag-examples">
               <span>Thử mô tả</span>
@@ -954,6 +1012,26 @@ export default function Workspace() {
                 <X size={16} />
               </button>
             </header>
+            <div className="ai-toolbar">
+              <label>
+                <input
+                  type="checkbox"
+                  aria-label="Dùng AI OpenRouter"
+                  checked={useAI && !!status?.ai?.enabled}
+                  disabled={!status?.ai?.enabled || sending}
+                  onChange={(e) => {
+                    setUseAI(e.target.checked);
+                    try {
+                      localStorage.setItem('hs-atlas-use-ai', String(e.target.checked));
+                    } catch {}
+                  }}
+                />
+                {useAI && status?.ai?.enabled ? 'AI · OpenRouter free' : 'Tra cứu nội bộ'}
+              </label>
+              {useAI && status?.ai?.enabled && (
+                <span>Mô tả gửi qua OpenRouter; nhà cung cấp có ghi log.</span>
+              )}
+            </div>
             {lookupDiffers && (
               <div className="lookup-context-note">
                 <span>
@@ -1075,7 +1153,9 @@ export default function Workspace() {
                   ))}
                   {sending && (
                     <div className="thinking" role="status">
-                      Đang truy xuất hồ sơ và nguồn…
+                      {useAI && status?.ai?.enabled
+                        ? 'Đang đọc lời khai và đối chiếu nguồn…'
+                        : 'Đang truy xuất hồ sơ và nguồn…'}
                     </div>
                   )}
                 </div>

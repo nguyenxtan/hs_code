@@ -76,3 +76,57 @@ it('persists a code discussion, clears its focus on query edit and restores it o
   w = undoProduct(w, id);
   expect(w.products[0].focus_code).toBeUndefined();
 });
+
+it('guards model updates against edits and does not roll revision back on undo', async () => {
+  const { applyModelProfile } = await import('../src/lib/session');
+  let w = createWorkspace();
+  const id = w.activeId;
+  w = updateProduct(w, id, { query: 'con dấu' });
+  const revision = w.products[0].revision;
+  w = updateProduct(w, id, { facts: { body: 'nhựa' } });
+  expect(
+    applyModelProfile(w, id, revision, { core_query: 'con dấu', facts: { body: 'kim loại' } }),
+  ).toEqual(w);
+  const current = w.products[0].revision;
+  w = undoProduct(w, id);
+  expect(w.products[0].revision).toBeGreaterThan(current);
+});
+it('migrates saved sessions without revisions', async () => {
+  const { restoreWorkspace } = await import('../src/lib/session');
+  const w = createWorkspace();
+  delete (w.products[0] as unknown as Record<string, unknown>).revision;
+  expect(restoreWorkspace(w)?.products[0].revision).toBe(0);
+});
+it('moves only a missed new-product turn and leaves earlier profile facts intact', async () => {
+  const { finishAssistantTurn } = await import('../src/lib/session');
+  let w = createWorkspace();
+  const id = w.activeId;
+  w = updateProduct(w, id, { query: 'con dấu', facts: { body: 'nhựa' } });
+  const before = w.products[0];
+  w = {
+    ...w,
+    products: w.products.map((p) => ({
+      ...p,
+      revision: p.revision + 1,
+      messages: [{ id: 'turn', role: 'user' as const, content: 'máy in' }],
+    })),
+  };
+  const result = finishAssistantTurn(
+    w,
+    { id, revision: w.products[0].revision, turnId: 'turn', before, editToken: 'edit' },
+    { core_query: 'máy in', query: 'máy in', facts: {}, new_product: true },
+    { role: 'assistant', content: 'Nguồn máy in' },
+  );
+  expect(result.workspace.products).toHaveLength(2);
+  expect(result.workspace.products[0].facts).toEqual({ body: 'nhựa' });
+  expect(result.workspace.products[0].messages).toEqual([]);
+  expect(result.workspace.products[1].facts).toEqual({});
+  expect(result.workspace.products[1].messages).toHaveLength(2);
+});
+it('does not optimistically store a confirmation question as a declared fact', () => {
+  expect(extractFacts('Có phải vỏ nhựa không?')).toEqual({});
+});
+it('records a declared material without inventing the part', () => {
+  expect(extractFacts('con dấu kim loại')).toEqual({ material_unknown: 'kim loại' });
+  expect(extractFacts('không biết có phải kim loại không?')).toEqual({});
+});

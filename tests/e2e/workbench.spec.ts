@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test('search becomes a compact workbench without losing input focus and shows dense rows', async ({
   page,

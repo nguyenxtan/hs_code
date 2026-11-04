@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadSnapshot } from '@/lib/db';
 import { hybridSearch } from '@/lib/semantic';
 import { categories } from '@/lib/categories';
-import { searchRecords } from '@/lib/search';
+import { searchRecords, validFacts } from '@/lib/search';
 export const runtime = 'nodejs';
 async function lookup(req: NextRequest, facts: unknown) {
   const p = req.nextUrl.searchParams,
@@ -15,9 +15,7 @@ async function lookup(req: NextRequest, facts: unknown) {
     (chapter && !/^\d{2}$/.test(chapter)) ||
     !['all', 'main', 'chapter98'].includes(dataset) ||
     (category && !categories.some((c) => c.id === category)) ||
-    !Array.isArray(facts) ||
-    facts.length > 20 ||
-    facts.some((f) => typeof f !== 'string' || f.length > 200)
+    !validFacts(facts)
   )
     return NextResponse.json({ error: 'Truy vấn hoặc lời khai không hợp lệ.' }, { status: 400 });
   try {

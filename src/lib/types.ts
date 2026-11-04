@@ -31,7 +31,7 @@ export type SearchOptions = {
   chapter?: string;
   dataset?: string;
   category?: string;
-  facts?: string[];
+  facts?: string[] | Record<string, string>;
   limit?: number;
   offset?: number;
 };
@@ -46,6 +46,7 @@ export type SearchResult = {
   mode?: string;
 };
 export type Message = {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   references?: CodeReference[];
@@ -57,8 +58,10 @@ export type ProductRevision = {
   facts: Record<string, string>;
   query: string;
   focus_code?: string;
+  core_query?: string;
 };
 export type Product = ProductRevision & {
+  revision: number;
   id: string;
   messages: Message[];
   history: ProductRevision[];

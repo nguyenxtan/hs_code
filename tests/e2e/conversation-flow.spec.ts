@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test('home offers one input at a time with the assistant selected first', async ({ page }) => {
   await page.goto('/');

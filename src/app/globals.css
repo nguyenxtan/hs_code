@@ -2069,3 +2069,38 @@ button svg,
     align-items: flex-start;
   }
 }
+
+.ai-toolbar {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  color: #71839b;
+  display: grid;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ai-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #426394;
+}
+.ai-toolbar input {
+  accent-color: var(--blue);
+}
+.ai-toolbar span {
+  font-size: 10px;
+}
+.rag-ai-choice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #71839b;
+  margin-top: 12px;
+  line-height: 1.6;
+}
+.rag-ai-choice input {
+  accent-color: var(--blue);
+  flex-shrink: 0;
+}
